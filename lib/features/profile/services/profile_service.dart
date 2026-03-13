@@ -42,10 +42,7 @@ class ProfileService {
       isCompleted = empProfile != null;
     }
 
-    return {
-      'role': role,
-      'isCompleted': isCompleted,
-    };
+    return {'role': role, 'isCompleted': isCompleted};
   }
 
   Future<void> upsertJobseekerProfile({
@@ -90,7 +87,9 @@ class ProfileService {
       'id': user.id,
       'company_name': companyName,
       'industry': industry?.trim().isNotEmpty == true ? industry : null,
-      'description': description?.trim().isNotEmpty == true ? description : null,
+      'description': description?.trim().isNotEmpty == true
+          ? description
+          : null,
       'website': website?.trim().isNotEmpty == true ? website : null,
       'telegram_handle': cleanTelegram,
     });

@@ -17,7 +17,12 @@ class _JobListingScreenState extends ConsumerState<JobListingScreen> {
   Timer? _debounce;
   final TextEditingController _searchController = TextEditingController();
 
-  final List<String> _categories = ['All', 'Internship', 'Full-time', 'Part-time'];
+  final List<String> _categories = [
+    'All',
+    'Internship',
+    'Full-time',
+    'Part-time',
+  ];
 
   @override
   void dispose() {
@@ -68,7 +73,7 @@ class _JobListingScreenState extends ConsumerState<JobListingScreen> {
               ),
             ),
           ),
-          
+
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -91,9 +96,9 @@ class _JobListingScreenState extends ConsumerState<JobListingScreen> {
               }).toList(),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           Expanded(
             child: jobsAsyncValue.when(
               data: (jobs) {
@@ -105,13 +110,23 @@ class _JobListingScreenState extends ConsumerState<JobListingScreen> {
                   itemBuilder: (context, index) {
                     final job = jobs[index];
                     return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundImage: job.companyLogo != null ? NetworkImage(job.companyLogo!) : null,
-                          child: job.companyLogo == null ? const Icon(Icons.business) : null,
+                          backgroundImage: job.companyLogo != null
+                              ? NetworkImage(job.companyLogo!)
+                              : null,
+                          child: job.companyLogo == null
+                              ? const Icon(Icons.business)
+                              : null,
                         ),
-                        title: Text(job.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        title: Text(
+                          job.title,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -120,11 +135,19 @@ class _JobListingScreenState extends ConsumerState<JobListingScreen> {
                             Wrap(
                               spacing: 4,
                               runSpacing: 4,
-                              children: job.skillsRequired.map((skill) => Chip(
-                                label: Text(skill, style: const TextStyle(fontSize: 10)),
-                                padding: EdgeInsets.zero,
-                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              )).toList(),
+                              children: job.skillsRequired
+                                  .map(
+                                    (skill) => Chip(
+                                      label: Text(
+                                        skill,
+                                        style: const TextStyle(fontSize: 10),
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      materialTapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  )
+                                  .toList(),
                             ),
                           ],
                         ),

@@ -30,8 +30,12 @@ class JobDetailScreen extends ConsumerWidget {
                     children: [
                       CircleAvatar(
                         radius: 24,
-                        backgroundImage: job.companyLogo != null ? NetworkImage(job.companyLogo!) : null,
-                        child: job.companyLogo == null ? const Icon(Icons.business) : null,
+                        backgroundImage: job.companyLogo != null
+                            ? NetworkImage(job.companyLogo!)
+                            : null,
+                        child: job.companyLogo == null
+                            ? const Icon(Icons.business)
+                            : null,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -45,16 +49,29 @@ class JobDetailScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                Text(job.title, style: Theme.of(context).textTheme.headlineMedium),
+                Text(
+                  job.title,
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
                 const SizedBox(height: 8),
-                Text('Category: ${job.category}', style: Theme.of(context).textTheme.labelLarge),
+                Text(
+                  'Category: ${job.category}',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
                 if (job.location != null && job.location!.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                      const Icon(
+                        Icons.location_on,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(width: 4),
-                      Text(job.location!, style: Theme.of(context).textTheme.bodyMedium),
+                      Text(
+                        job.location!,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
                     ],
                   ),
                 ],
@@ -62,22 +79,37 @@ class JobDetailScreen extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.attach_money, size: 16, color: Colors.grey),
+                      const Icon(
+                        Icons.attach_money,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(width: 4),
-                      Text(job.salaryRange!, style: Theme.of(context).textTheme.bodyMedium),
+                      Text(
+                        job.salaryRange!,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
                     ],
                   ),
                 ],
                 const SizedBox(height: 16),
-                Text('Description', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  'Description',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 const SizedBox(height: 8),
                 Text(job.description),
                 const SizedBox(height: 16),
-                Text('Skills Required', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  'Skills Required',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
-                  children: job.skillsRequired.map((skill) => Chip(label: Text(skill))).toList(),
+                  children: job.skillsRequired
+                      .map((skill) => Chip(label: Text(skill)))
+                      .toList(),
                 ),
                 const Spacer(),
                 if (!isEmployer) ...[
@@ -86,9 +118,12 @@ class JobDetailScreen extends ConsumerWidget {
                     child: ElevatedButton.icon(
                       onPressed: () {
                         // Apply callback
-                        final contact = job.telegramContact ?? 'employer_handle';
+                        final contact =
+                            job.telegramContact ?? 'employer_handle';
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Would open Telegram to: $contact')),
+                          SnackBar(
+                            content: Text('Would open Telegram to: $contact'),
+                          ),
                         );
                       },
                       icon: const Icon(Icons.send),

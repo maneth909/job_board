@@ -38,7 +38,7 @@ class Job {
 
     if (profilesData != null) {
       parsedCompanyLogo = profilesData['avatar_url'] as String?;
-      
+
       final empData = profilesData['employer_profiles'];
       if (empData != null) {
         if (empData is List && empData.isNotEmpty) {
@@ -58,7 +58,9 @@ class Job {
       category: map['category'] as String,
       isActive: map['is_active'] as bool? ?? true,
       createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: DateTime.parse(map['updated_at'] ?? map['created_at'] as String),
+      updatedAt: DateTime.parse(
+        map['updated_at'] ?? map['created_at'] as String,
+      ),
       location: map['location'] as String?,
       salaryRange: map['salary_range'] as String?,
       telegramContact: map['telegram_contact'] as String?,

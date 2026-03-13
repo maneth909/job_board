@@ -12,10 +12,12 @@ class JobseekerProfileScreen extends ConsumerStatefulWidget {
   const JobseekerProfileScreen({super.key});
 
   @override
-  ConsumerState<JobseekerProfileScreen> createState() => _JobseekerProfileScreenState();
+  ConsumerState<JobseekerProfileScreen> createState() =>
+      _JobseekerProfileScreenState();
 }
 
-class _JobseekerProfileScreenState extends ConsumerState<JobseekerProfileScreen> {
+class _JobseekerProfileScreenState
+    extends ConsumerState<JobseekerProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _universityController = TextEditingController();
   final _majorController = TextEditingController();
@@ -52,12 +54,12 @@ class _JobseekerProfileScreenState extends ConsumerState<JobseekerProfileScreen>
           setState(() {
             _universityController.text = profile['university'] as String? ?? '';
             _majorController.text = profile['major'] as String? ?? '';
-            
+
             final skills = profile['skills'] as List<dynamic>?;
             if (skills != null) {
               _skillsController.text = skills.join(', ');
             }
-            
+
             _bioController.text = profile['bio'] as String? ?? '';
           });
         }
@@ -89,18 +91,24 @@ class _JobseekerProfileScreenState extends ConsumerState<JobseekerProfileScreen>
       await profileService.upsertJobseekerProfile(
         university: _universityController.text,
         major: _majorController.text,
-        skillsString: _skillsController.text.isNotEmpty ? _skillsController.text : null,
+        skillsString: _skillsController.text.isNotEmpty
+            ? _skillsController.text
+            : null,
         bio: _bioController.text.isNotEmpty ? _bioController.text : null,
       );
 
       ref.read(profileStateProvider.notifier).markAsCompleted();
-      
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile saved!')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Profile saved!')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) {
@@ -136,8 +144,12 @@ class _JobseekerProfileScreenState extends ConsumerState<JobseekerProfileScreen>
                   onTap: _pickImage,
                   child: CircleAvatar(
                     radius: 50,
-                    backgroundImage: _avatarFile != null ? FileImage(_avatarFile!) : null,
-                    child: _avatarFile == null ? const Icon(Icons.camera_alt, size: 40) : null,
+                    backgroundImage: _avatarFile != null
+                        ? FileImage(_avatarFile!)
+                        : null,
+                    child: _avatarFile == null
+                        ? const Icon(Icons.camera_alt, size: 40)
+                        : null,
                   ),
                 ),
               ),
@@ -145,18 +157,22 @@ class _JobseekerProfileScreenState extends ConsumerState<JobseekerProfileScreen>
               TextFormField(
                 controller: _universityController,
                 decoration: const InputDecoration(labelText: 'University *'),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _majorController,
                 decoration: const InputDecoration(labelText: 'Major *'),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _skillsController,
-                decoration: const InputDecoration(labelText: 'Skills (comma separated)'),
+                decoration: const InputDecoration(
+                  labelText: 'Skills (comma separated)',
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -167,7 +183,13 @@ class _JobseekerProfileScreenState extends ConsumerState<JobseekerProfileScreen>
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _isLoading ? null : _saveProfile,
-                child: _isLoading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save Profile'),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save Profile'),
               ),
               const SizedBox(height: 16),
               OutlinedButton(

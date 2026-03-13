@@ -6,12 +6,19 @@ import '../../jobs/services/job_service.dart';
 import '../../jobs/models/job_model.dart';
 import 'package:go_router/go_router.dart';
 
-final employerProfileProvider = FutureProvider.family<Map<String, dynamic>?, String>((ref, employerId) async {
-  final profileService = ref.watch(profileServiceProvider);
-  return profileService.getEmployerProfile(employerId);
-});
+final employerProfileProvider =
+    FutureProvider.family<Map<String, dynamic>?, String>((
+      ref,
+      employerId,
+    ) async {
+      final profileService = ref.watch(profileServiceProvider);
+      return profileService.getEmployerProfile(employerId);
+    });
 
-final employerJobsProvider = FutureProvider.family<List<Job>, String>((ref, employerId) async {
+final employerJobsProvider = FutureProvider.family<List<Job>, String>((
+  ref,
+  employerId,
+) async {
   final jobService = ref.watch(jobServiceProvider);
   final jobs = await jobService.getJobs();
   return jobs.where((job) => job.employerId == employerId).toList();
@@ -24,7 +31,9 @@ class EmployerPublicProfileScreen extends ConsumerWidget {
 
   Future<void> _launchUrl(String? urlString) async {
     if (urlString == null || urlString.isEmpty) return;
-    final uri = Uri.parse(urlString.startsWith('http') ? urlString : 'https://$urlString');
+    final uri = Uri.parse(
+      urlString.startsWith('http') ? urlString : 'https://$urlString',
+    );
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }
@@ -45,9 +54,10 @@ class EmployerPublicProfileScreen extends ConsumerWidget {
 
           final companyName = profile['company_name'] as String? ?? 'Unknown';
           final industry = profile['industry'] as String? ?? 'Not specified';
-          final description = profile['description'] as String? ?? 'No description provided.';
+          final description =
+              profile['description'] as String? ?? 'No description provided.';
           final website = profile['website'] as String?;
-          
+
           final profilesData = profile['profiles'];
           String? avatarUrl;
           if (profilesData != null) {
@@ -66,8 +76,12 @@ class EmployerPublicProfileScreen extends ConsumerWidget {
                 Center(
                   child: CircleAvatar(
                     radius: 48,
-                    backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                    child: avatarUrl == null ? const Icon(Icons.business, size: 48) : null,
+                    backgroundImage: avatarUrl != null
+                        ? NetworkImage(avatarUrl)
+                        : null,
+                    child: avatarUrl == null
+                        ? const Icon(Icons.business, size: 48)
+                        : null,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -81,7 +95,9 @@ class EmployerPublicProfileScreen extends ConsumerWidget {
                 Center(
                   child: Text(
                     industry,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleMedium?.copyWith(color: Colors.grey),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -95,23 +111,34 @@ class EmployerPublicProfileScreen extends ConsumerWidget {
                         const SizedBox(width: 8),
                         Text(
                           website,
-                          style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+                          style: const TextStyle(
+                            color: Colors.blue,
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
                 ],
-                Text('About the Company', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  'About the Company',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 const SizedBox(height: 8),
                 Text(description),
                 const SizedBox(height: 32),
-                Text('Active Jobs', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  'Active Jobs',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 const SizedBox(height: 8),
                 jobsAsync.when(
                   data: (jobs) {
                     if (jobs.isEmpty) {
-                      return const Text('This employer currently has no active job postings.');
+                      return const Text(
+                        'This employer currently has no active job postings.',
+                      );
                     }
                     return ListView.builder(
                       shrinkWrap: true,
@@ -122,7 +149,12 @@ class EmployerPublicProfileScreen extends ConsumerWidget {
                         return Card(
                           margin: const EdgeInsets.symmetric(vertical: 4),
                           child: ListTile(
-                            title: Text(job.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            title: Text(
+                              job.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             subtitle: Text(job.category),
                             trailing: const Icon(Icons.chevron_right),
                             onTap: () => context.push('/jobs/${job.id}'),
@@ -139,7 +171,8 @@ class EmployerPublicProfileScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error loading profile: $err')),
+        error: (err, stack) =>
+            Center(child: Text('Error loading profile: $err')),
       ),
     );
   }

@@ -25,7 +25,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (BuildContext context, GoRouterState state) {
       final session = authState.value?.session;
       final isAuthenticated = session != null;
-      
+
       final isLoginRoute = state.matchedLocation == '/login';
       final isRegisterRoute = state.matchedLocation == '/register';
       final isRoleSelectionRoute = state.matchedLocation == '/role-selection';
@@ -49,13 +49,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
 
         if (role != null && !isCompleted) {
-          final targetSetupRoute = role == 'jobseeker' ? '/profile-setup/jobseeker' : '/profile-setup/employer';
-          if (state.matchedLocation != targetSetupRoute && state.matchedLocation != '/profile/cv-upload') {
+          final targetSetupRoute = role == 'jobseeker'
+              ? '/profile-setup/jobseeker'
+              : '/profile-setup/employer';
+          if (state.matchedLocation != targetSetupRoute &&
+              state.matchedLocation != '/profile/cv-upload') {
             return targetSetupRoute;
           }
         }
 
-        if (isCompleted && (isAuthRoute || isRoleSelectionRoute || state.matchedLocation.startsWith('/profile-setup'))) {
+        if (isCompleted &&
+            (isAuthRoute ||
+                isRoleSelectionRoute ||
+                state.matchedLocation.startsWith('/profile-setup'))) {
           // Prevent backstack access to login or profile setup if already completed
           return role == 'employer' ? '/jobs/manage' : '/jobs';
         }
@@ -64,10 +70,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),

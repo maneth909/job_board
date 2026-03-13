@@ -11,7 +11,8 @@ class EmployerProfileScreen extends ConsumerStatefulWidget {
   const EmployerProfileScreen({super.key});
 
   @override
-  ConsumerState<EmployerProfileScreen> createState() => _EmployerProfileScreenState();
+  ConsumerState<EmployerProfileScreen> createState() =>
+      _EmployerProfileScreenState();
 }
 
 class _EmployerProfileScreenState extends ConsumerState<EmployerProfileScreen> {
@@ -22,7 +23,13 @@ class _EmployerProfileScreenState extends ConsumerState<EmployerProfileScreen> {
   final _telegramController = TextEditingController();
 
   String? _selectedIndustry;
-  final List<String> _industries = ['Technology', 'Healthcare', 'Finance', 'Education', 'Other'];
+  final List<String> _industries = [
+    'Technology',
+    'Healthcare',
+    'Finance',
+    'Education',
+    'Other',
+  ];
 
   File? _logoFile;
   bool _isLoading = false;
@@ -52,13 +59,16 @@ class _EmployerProfileScreenState extends ConsumerState<EmployerProfileScreen> {
         final profile = await profileService.getEmployerProfile(user.id);
         if (profile != null && mounted) {
           setState(() {
-            _companyNameController.text = profile['company_name'] as String? ?? '';
+            _companyNameController.text =
+                profile['company_name'] as String? ?? '';
             _selectedIndustry = profile['industry'] as String?;
-            _descriptionController.text = profile['description'] as String? ?? '';
+            _descriptionController.text =
+                profile['description'] as String? ?? '';
             _websiteController.text = profile['website'] as String? ?? '';
-            _telegramController.text = profile['telegram_handle'] as String? ?? '';
-            // We can't pre-fill File _logoFile natively from an avatar_url simply, 
-            // but for text fields this works. 
+            _telegramController.text =
+                profile['telegram_handle'] as String? ?? '';
+            // We can't pre-fill File _logoFile natively from an avatar_url simply,
+            // but for text fields this works.
           });
         }
       }
@@ -83,25 +93,35 @@ class _EmployerProfileScreenState extends ConsumerState<EmployerProfileScreen> {
       final fileUploadService = ref.read(fileUploadServiceProvider);
 
       if (_logoFile != null) {
-        await fileUploadService.uploadAvatar(_logoFile!); // treating logo as avatar in profiles
+        await fileUploadService.uploadAvatar(
+          _logoFile!,
+        ); // treating logo as avatar in profiles
       }
 
       await profileService.upsertEmployerProfile(
         companyName: _companyNameController.text,
         industry: _selectedIndustry,
-        description: _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
-        website: _websiteController.text.isNotEmpty ? _websiteController.text : null,
+        description: _descriptionController.text.isNotEmpty
+            ? _descriptionController.text
+            : null,
+        website: _websiteController.text.isNotEmpty
+            ? _websiteController.text
+            : null,
         telegramHandle: _telegramController.text,
       );
 
       ref.read(profileStateProvider.notifier).markAsCompleted();
-      
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile saved!')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Profile saved!')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) {
@@ -137,8 +157,12 @@ class _EmployerProfileScreenState extends ConsumerState<EmployerProfileScreen> {
                   onTap: _pickImage,
                   child: CircleAvatar(
                     radius: 50,
-                    backgroundImage: _logoFile != null ? FileImage(_logoFile!) : null,
-                    child: _logoFile == null ? const Icon(Icons.business, size: 40) : null,
+                    backgroundImage: _logoFile != null
+                        ? FileImage(_logoFile!)
+                        : null,
+                    child: _logoFile == null
+                        ? const Icon(Icons.business, size: 40)
+                        : null,
                   ),
                 ),
               ),
@@ -146,7 +170,8 @@ class _EmployerProfileScreenState extends ConsumerState<EmployerProfileScreen> {
               TextFormField(
                 controller: _companyNameController,
                 decoration: const InputDecoration(labelText: 'Company Name *'),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
@@ -178,13 +203,23 @@ class _EmployerProfileScreenState extends ConsumerState<EmployerProfileScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _telegramController,
-                decoration: const InputDecoration(labelText: 'Telegram Handle *', prefixText: '@'),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                decoration: const InputDecoration(
+                  labelText: 'Telegram Handle *',
+                  prefixText: '@',
+                ),
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _isLoading ? null : _saveProfile,
-                child: _isLoading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save Profile'),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save Profile'),
               ),
             ],
           ),

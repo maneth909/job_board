@@ -21,7 +21,7 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
   final _locationController = TextEditingController();
   final _salaryController = TextEditingController();
   final _telegramController = TextEditingController();
-  
+
   String _category = 'Full-time';
   final List<String> _categories = ['Internship', 'Full-time', 'Part-time'];
 
@@ -74,9 +74,15 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
           description: _descriptionController.text.trim(),
           skillsRequired: skillsList,
           category: _category,
-          location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
-          salaryRange: _salaryController.text.trim().isEmpty ? null : _salaryController.text.trim(),
-          telegramContact: _telegramController.text.trim().isEmpty ? null : _telegramController.text.trim(),
+          location: _locationController.text.trim().isEmpty
+              ? null
+              : _locationController.text.trim(),
+          salaryRange: _salaryController.text.trim().isEmpty
+              ? null
+              : _salaryController.text.trim(),
+          telegramContact: _telegramController.text.trim().isEmpty
+              ? null
+              : _telegramController.text.trim(),
         );
         await jobService.updateJob(updatedJob);
       } else {
@@ -86,9 +92,15 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
           description: _descriptionController.text.trim(),
           skillsRequired: skillsList,
           category: _category,
-          location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
-          salaryRange: _salaryController.text.trim().isEmpty ? null : _salaryController.text.trim(),
-          telegramContact: _telegramController.text.trim().isEmpty ? null : _telegramController.text.trim(),
+          location: _locationController.text.trim().isEmpty
+              ? null
+              : _locationController.text.trim(),
+          salaryRange: _salaryController.text.trim().isEmpty
+              ? null
+              : _salaryController.text.trim(),
+          telegramContact: _telegramController.text.trim().isEmpty
+              ? null
+              : _telegramController.text.trim(),
         );
       }
 
@@ -97,15 +109,17 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(widget.job != null ? 'Job updated!' : 'Job posted!')),
+          SnackBar(
+            content: Text(widget.job != null ? 'Job updated!' : 'Job posted!'),
+          ),
         );
         context.pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) {
@@ -119,9 +133,7 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
     final isEditing = widget.job != null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditing ? 'Edit Job' : 'Post a Job'),
-      ),
+      appBar: AppBar(title: Text(isEditing ? 'Edit Job' : 'Post a Job')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -132,7 +144,8 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Job Title'),
-                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+                validator: (val) =>
+                    val == null || val.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
@@ -150,7 +163,8 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
                 controller: _descriptionController,
                 decoration: const InputDecoration(labelText: 'Job Description'),
                 maxLines: 5,
-                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+                validator: (val) =>
+                    val == null || val.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -159,7 +173,8 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
                   labelText: 'Skills Required (comma separated)',
                   hintText: 'e.g. Flutter, Dart, Firebase',
                 ),
-                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+                validator: (val) =>
+                    val == null || val.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
