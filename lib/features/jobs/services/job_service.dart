@@ -100,6 +100,7 @@ class JobService {
     String? location,
     String? salaryRange,
     String? telegramContact,
+    bool isActive = true,
   }) async {
     final currentUser = ref.read(currentUserProvider);
     if (currentUser == null) throw Exception('User not logged in');
@@ -113,8 +114,21 @@ class JobService {
       'location': location?.trim().isNotEmpty == true ? location : null,
       'salary_range': salaryRange?.trim().isNotEmpty == true ? salaryRange : null,
       'telegram_contact': telegramContact?.trim().isNotEmpty == true ? telegramContact : null,
-      'is_active': true,
+      'is_active': isActive,
     });
+  }
+
+  Future<void> duplicateJob(Job job) async {
+    await postJob(
+      title: '${job.title} (Copy)',
+      description: job.description,
+      skillsRequired: job.skillsRequired,
+      category: job.category,
+      location: job.location,
+      salaryRange: job.salaryRange,
+      telegramContact: job.telegramContact,
+      isActive: false, // Copies start as inactive so employer can edit before publishing
+    );
   }
 
   Future<void> updateJob(Job job) async {

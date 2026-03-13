@@ -25,6 +25,7 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
   String _category = 'Full-time';
   final List<String> _categories = ['Internship', 'Full-time', 'Part-time'];
 
+  bool _isActive = true;
   bool _isLoading = false;
 
   @override
@@ -37,6 +38,7 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
       _locationController.text = widget.job!.location ?? '';
       _salaryController.text = widget.job!.salaryRange ?? '';
       _telegramController.text = widget.job!.telegramContact ?? '';
+      _isActive = widget.job!.isActive;
       if (_categories.contains(widget.job!.category)) {
         _category = widget.job!.category;
       }
@@ -83,6 +85,7 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
           telegramContact: _telegramController.text.trim().isEmpty
               ? null
               : _telegramController.text.trim(),
+          isActive: _isActive,
         );
         await jobService.updateJob(updatedJob);
       } else {
@@ -101,6 +104,7 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
           telegramContact: _telegramController.text.trim().isEmpty
               ? null
               : _telegramController.text.trim(),
+          isActive: _isActive,
         );
       }
 
@@ -199,6 +203,13 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
                   labelText: 'Telegram Contact for Applications (Optional)',
                   hintText: 'e.g. @employer_handle',
                 ),
+              ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text('Job is Active'),
+                subtitle: const Text('Inactive jobs are hidden from job seekers'),
+                value: _isActive,
+                onChanged: (val) => setState(() => _isActive = val),
               ),
               const SizedBox(height: 32),
               ElevatedButton(

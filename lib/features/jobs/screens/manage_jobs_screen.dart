@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../models/job_model.dart';
 import '../services/job_service.dart';
 
 class ManageJobsScreen extends ConsumerWidget {
@@ -43,6 +44,20 @@ class ManageJobsScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _duplicateJob(BuildContext context, WidgetRef ref, Job job) async {
+    try {
+      await ref.read(jobServiceProvider).duplicateJob(job);
+      ref.invalidate(myJobsProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Job duplicated (Inactive)')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error duplicating job: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final myJobsAsync = ref.watch(myJobsProvider);
@@ -71,22 +86,73 @@ class ManageJobsScreen extends ConsumerWidget {
             itemBuilder: (context, index) {
               final job = jobs[index];
               return Card(
+                color: job.isActive ? null : Theme.of(context).colorScheme.surfaceContainerHighest,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListTile(
-                  title: Text(job.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Posted on ${job.createdAt.toLocal().toString().split(' ')[0]}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  title: Row(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.blue),
-                        onPressed: () {
-                          context.push('/jobs/post', extra: job);
-                        },
+                      Expanded(
+                        child: Text(
+                          job.title, 
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: job.isActive ? null : Colors.grey.shade700,
+                          ),
+                        ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _confirmDelete(context, ref, job.id),
+                      if (!job.isActive)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade400,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text('INACTIVE', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                        ),
+                    ],
+                  ),
+                  subtitle: Text(
+                    'Posted on ${job.createdAt.toLocal().toString().split(' ')[0]}',
+                    style: TextStyle(color: job.isActive ? null : Colors.grey.shade600),
+                  ),
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'edit':
+                          context.push('/jobs/post', extra: job);
+                          break;
+                        case 'duplicate':
+                          _duplicateJob(context, ref, job);
+                          break;
+                        case 'delete':
+                          _confirmDelete(context, ref, job.id);
+                          break;
+                      }
+                    },
+                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                      const PopupMenuItem<String>(
+                        value: 'edit',
+                        child: ListTile(
+                          leading: Icon(Icons.edit, color: Colors.blue),
+                          title: Text('Edit'),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'duplicate',
+                        child: ListTile(
+                          leading: Icon(Icons.copy, color: Colors.green),
+                          title: Text('Duplicate'),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'delete',
+                        child: ListTile(
+                          leading: Icon(Icons.delete, color: Colors.red),
+                          title: Text('Delete'),
+                          contentPadding: EdgeInsets.zero,
+                        ),
                       ),
                     ],
                   ),
