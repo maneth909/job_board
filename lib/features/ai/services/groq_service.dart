@@ -3,10 +3,16 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final groqServiceProvider = Provider((ref) => GroqService());
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/supabase_client.dart';
+
+final groqServiceProvider = Provider((ref) => GroqService(supabase));
 
 class GroqService {
+  final SupabaseClient supabase;
   final String _baseUrl = 'https://api.groq.com/openai/v1/chat/completions';
+
+  GroqService(this.supabase);
 
   Future<String> _callGroq({
     required String systemPrompt,
@@ -25,7 +31,7 @@ class GroqService {
         'Content-Type': 'application/json',
       },
       body: jsonEncode({
-        'model': 'llama3-8b-instant',
+        'model': 'llama-3.3-70b-versatile',
         'messages': [
           {'role': 'system', 'content': systemPrompt},
           {'role': 'user', 'content': userMessage},
@@ -77,8 +83,19 @@ CV Link: $cvUrl
     required String jobDescription,
   }) async {
     const systemPrompt =
-        '''You are a career advisor AI. Analyze a CV against a job description. Return ONLY a valid JSON object. No explanation before or after. No markdown. Format: {"score": 75, "explanation": "two sentence summary", "matching_skills": ["skill1"], "missing_skills": ["skill2"]}''';
-
+        '''You are a supportive, enthusiastic career advisor AI helping a university student. Analyze their CV against the job description.
+Return ONLY a valid JSON object. No conversational text before or after. No markdown formatting blocks like ```json.
+Format the JSON exactly like this:
+{
+  "score": 75,
+  "explanation": "🌟 **Great potential!** Here is a quick breakdown:\\n• You already have a strong foundation in X and Y.\\n• Your project experience aligns well with their needs.\\n💡 **Next Step:** To be a top candidate, try to familiarize yourself with Z.",
+  "matching_skills": ["skill1", "skill2"],
+  "missing_skills": ["skill3"]
+}
+Rules for the 'explanation' field:
+- MUST include appropriate emojis (🌟, 💡, 🚀, 🎯, etc.).
+- MUST use the bullet point character (•) and newline characters (\\n) to make it easy to read on a mobile screen.
+- Keep the tone encouraging, realistic, and completely free of complex corporate jargon. Keep it under 4 short lines.''';
     final userMessage =
         '''
 Job Description:
@@ -105,6 +122,29 @@ $cvText
         'Failed to extract valid JSON from Groq response.',
       );
     }
+  }
+
+  Future<Map<String, dynamic>> getAndCacheCVMatchScore({
+    required String jobId,
+    required String cvText,
+    required String jobDescription,
+  }) async {
+    final parsedJson = await getCVMatchScore(
+      cvText: cvText,
+      jobDescription: jobDescription,
+    );
+
+    final currentUser = supabase.auth.currentUser;
+    if (currentUser == null) throw Exception('User not logged in');
+
+    await supabase.from('cv_matches').upsert({
+      'job_id': jobId,
+      'jobseeker_id': currentUser.id,
+      'score': parsedJson['score'],
+      'match_data': parsedJson,
+    }, onConflict: 'job_id, jobseeker_id');
+
+    return parsedJson;
   }
 
   Future<String> simplifyJobDescription(String jobDescription) async {
