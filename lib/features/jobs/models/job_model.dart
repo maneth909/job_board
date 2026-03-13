@@ -13,6 +13,7 @@ class Job {
   final String? telegramContact;
   final String? companyName;
   final String? companyLogo;
+  final int? cachedMatchScore;
 
   Job({
     required this.id,
@@ -29,12 +30,14 @@ class Job {
     this.telegramContact,
     this.companyName,
     this.companyLogo,
+    this.cachedMatchScore,
   });
 
   factory Job.fromMap(Map<String, dynamic> map) {
     final profilesData = map['profiles'];
     String? parsedCompanyName;
     String? parsedCompanyLogo;
+    int? parsedMatchScore;
 
     if (profilesData != null) {
       parsedCompanyLogo = profilesData['avatar_url'] as String?;
@@ -47,6 +50,11 @@ class Job {
           parsedCompanyName = empData['company_name'] as String?;
         }
       }
+    }
+
+    final cvMatches = map['cv_matches'];
+    if (cvMatches != null && cvMatches is List && cvMatches.isNotEmpty) {
+      parsedMatchScore = cvMatches[0]['score'] as int?;
     }
 
     return Job(
@@ -66,6 +74,7 @@ class Job {
       telegramContact: map['telegram_contact'] as String?,
       companyName: parsedCompanyName,
       companyLogo: parsedCompanyLogo,
+      cachedMatchScore: parsedMatchScore,
     );
   }
 
@@ -83,6 +92,7 @@ class Job {
       'location': location,
       'salary_range': salaryRange,
       'telegram_contact': telegramContact,
+      'cached_match_score': cachedMatchScore,
     };
   }
 
@@ -101,6 +111,7 @@ class Job {
     String? telegramContact,
     String? companyName,
     String? companyLogo,
+    int? cachedMatchScore,
   }) {
     return Job(
       id: id ?? this.id,
@@ -117,6 +128,7 @@ class Job {
       telegramContact: telegramContact ?? this.telegramContact,
       companyName: companyName ?? this.companyName,
       companyLogo: companyLogo ?? this.companyLogo,
+      cachedMatchScore: cachedMatchScore ?? this.cachedMatchScore,
     );
   }
 }

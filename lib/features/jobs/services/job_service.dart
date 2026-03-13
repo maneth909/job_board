@@ -52,21 +52,44 @@ class JobService {
 
   JobService({required this.supabase, required this.ref});
 
-  Future<List<Job>> getJobs({String? searchQuery, String? category}) async {
+  Future<int> getTotalJobsCount({String? searchQuery, String? category}) async {
+    var query = supabase.from('jobs').select('id').eq('is_active', true);
+
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      query = query.textSearch('fts', searchQuery);
+    }
+
+    if (category != null && category.isNotEmpty && category != 'All') {
+      query = query.eq('category', category);
+    }
+
+    final response = await query.count(CountOption.exact);
+    return response.count;
+  }
+
+  Future<List<Job>> getJobs({
+    String? searchQuery,
+    String? category,
+    int page = 1,
+    int limit = 10,
+  }) async {
     var query = supabase
         .from('jobs')
-        .select('*, profiles(avatar_url, employer_profiles(company_name, industry))')
+        .select('*, profiles(avatar_url, employer_profiles(company_name, industry)), cv_matches(score)')
         .eq('is_active', true);
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
       query = query.textSearch('fts', searchQuery);
     }
-    
+
     if (category != null && category.isNotEmpty && category != 'All') {
       query = query.eq('category', category);
     }
 
-    final response = await query.order('created_at', ascending: false);
+    final from = (page - 1) * limit;
+    final to = from + limit - 1;
+
+    final response = await query.order('created_at', ascending: false).range(from, to);
     return (response as List<dynamic>).map((job) => Job.fromMap(job)).toList();
   }
 
