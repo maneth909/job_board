@@ -65,7 +65,7 @@ class _JobListingScreenState extends ConsumerState<JobListingScreen> {
               controller: _searchController,
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
-                hintText: 'Search jobs...',
+                hintText: 'Search by title or keyword...',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),

@@ -59,7 +59,7 @@ class JobService {
         .eq('is_active', true);
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
-      query = query.ilike('title', '%$searchQuery%');
+      query = query.textSearch('fts', searchQuery);
     }
     
     if (category != null && category.isNotEmpty && category != 'All') {
