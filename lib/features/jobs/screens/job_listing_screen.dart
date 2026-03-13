@@ -14,6 +14,10 @@ class JobListingScreen extends ConsumerStatefulWidget {
 class _JobListingScreenState extends ConsumerState<JobListingScreen> {
   String _searchQuery = '';
   String _category = 'All';
+  int _currentPage = 1;
+  int _totalJobs = 0;
+  bool _isLoadingTotal = false;
+
   Timer? _debounce;
   final TextEditingController _searchController = TextEditingController();
 
@@ -23,6 +27,31 @@ class _JobListingScreenState extends ConsumerState<JobListingScreen> {
     'Full-time',
     'Part-time',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTotalCount();
+  }
+
+  Future<void> _fetchTotalCount() async {
+    setState(() => _isLoadingTotal = true);
+    try {
+      final jobService = ref.read(jobServiceProvider);
+      final count = await jobService.getTotalJobsCount(
+        searchQuery: _searchQuery,
+        category: _category,
+      );
+      if (mounted) {
+        setState(() {
+          _totalJobs = count;
+          _isLoadingTotal = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingTotal = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -37,15 +66,20 @@ class _JobListingScreenState extends ConsumerState<JobListingScreen> {
       if (mounted) {
         setState(() {
           _searchQuery = query;
+          _currentPage = 1; // RESET page visually
         });
+        _fetchTotalCount();
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final filters = JobFilters(searchQuery: _searchQuery, category: _category);
+    final filters = JobFilters(
+        searchQuery: _searchQuery, category: _category, page: _currentPage);
     final jobsAsyncValue = ref.watch(jobsProvider(filters));
+
+    final totalPages = (_totalJobs / 10).ceil().clamp(1, 9999);
 
     return Scaffold(
       appBar: AppBar(
@@ -88,7 +122,9 @@ class _JobListingScreenState extends ConsumerState<JobListingScreen> {
                       if (selected) {
                         setState(() {
                           _category = cat;
+                          _currentPage = 1; // RESET
                         });
+                        _fetchTotalCount();
                       }
                     },
                   ),
@@ -149,6 +185,10 @@ class _JobListingScreenState extends ConsumerState<JobListingScreen> {
                                   )
                                   .toList(),
                             ),
+                            if (job.cachedMatchScore != null) ...[
+                              const SizedBox(height: 8),
+                              _buildMatchTarget(job.cachedMatchScore!),
+                            ],
                           ],
                         ),
                         trailing: const Icon(Icons.chevron_right),
@@ -163,7 +203,58 @@ class _JobListingScreenState extends ConsumerState<JobListingScreen> {
               error: (error, stack) => Center(child: Text('Error: $error')),
             ),
           ),
+
+          if (!_isLoadingTotal && _totalJobs > 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: _currentPage > 1
+                        ? () => setState(() => _currentPage--)
+                        : null,
+                  ),
+                  Text('Page $_currentPage of $totalPages'),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: _currentPage < totalPages
+                        ? () => setState(() => _currentPage++)
+                        : null,
+                  ),
+                ],
+              ),
+            ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMatchTarget(int score) {
+    Color color;
+    if (score < 40) {
+      color = Colors.red;
+    } else if (score < 70) {
+      color = Colors.orange;
+    } else {
+      color = Colors.green;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color),
+      ),
+      child: Text(
+        'Match: $score%',
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

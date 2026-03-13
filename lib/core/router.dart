@@ -12,6 +12,7 @@ import '../features/auth/services/auth_service.dart';
 import '../features/profile/providers/profile_state_provider.dart';
 import '../features/jobs/screens/job_listing_screen.dart';
 import '../features/jobs/screens/job_detail_screen.dart';
+import '../features/ai/screens/ai_match_screen.dart';
 import '../features/jobs/screens/job_post_screen.dart';
 import '../features/jobs/screens/manage_jobs_screen.dart';
 import '../features/jobs/models/job_model.dart';
@@ -99,6 +100,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           return JobDetailScreen(jobId: id);
+        },
+      ),
+      GoRoute(
+        path: '/jobs/:id/match',
+        builder: (context, state) {
+          final matchResult = state.extra as Map<String, dynamic>;
+          return AiMatchScreen(matchResult: matchResult);
         },
       ),
       GoRoute(

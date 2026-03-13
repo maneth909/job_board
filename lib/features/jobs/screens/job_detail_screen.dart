@@ -3,15 +3,98 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:job_board/features/profile/providers/profile_state_provider.dart';
 import '../services/job_service.dart';
+import '../models/job_model.dart';
 
-class JobDetailScreen extends ConsumerWidget {
+import '../../../core/supabase_client.dart';
+import '../../ai/services/groq_service.dart';
+import '../../profile/services/profile_service.dart';
+
+class JobDetailScreen extends ConsumerStatefulWidget {
   final String jobId;
 
   const JobDetailScreen({super.key, required this.jobId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final jobAsync = ref.watch(jobDetailsProvider(jobId));
+  ConsumerState<JobDetailScreen> createState() => _JobDetailScreenState();
+}
+
+class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
+  bool _isCheckingMatch = false;
+
+  Future<void> _handleAiMatch(Job job) async {
+    if (_isCheckingMatch) return;
+
+    setState(() {
+      _isCheckingMatch = true;
+    });
+
+    try {
+      final currentUser = supabase.auth.currentUser;
+      if (currentUser == null) throw Exception('User not logged in');
+
+      Map<String, dynamic> matchResult;
+
+      if (job.cachedMatchScore != null) {
+        // State 2: Already Analyzed
+        final response = await supabase
+            .from('cv_matches')
+            .select('match_data')
+            .eq('job_id', job.id)
+            .eq('jobseeker_id', currentUser.id)
+            .single();
+
+        matchResult = response['match_data'] as Map<String, dynamic>;
+      } else {
+        // State 1: First Time Analysis
+        final profileService = ref.read(profileServiceProvider);
+        final jsProfile = await profileService.getJobseekerProfile(currentUser.id);
+
+        if (jsProfile == null || jsProfile['cv_text'] == null || jsProfile['cv_text'].toString().trim().isEmpty) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please upload your CV in your Profile first to use AI Match.')),
+            );
+          }
+          setState(() {
+            _isCheckingMatch = false;
+          });
+          return;
+        }
+
+        final String cvText = jsProfile['cv_text'] as String;
+
+        final groqService = ref.read(groqServiceProvider);
+        matchResult = await groqService.getAndCacheCVMatchScore(
+          jobId: job.id,
+          cvText: cvText,
+          jobDescription: job.description,
+        );
+
+        // Refresh the feed
+        ref.invalidate(jobsProvider);
+      }
+
+      if (mounted) {
+        context.push('/jobs/${job.id}/match', extra: matchResult);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to analyze match: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCheckingMatch = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final jobAsync = ref.watch(jobDetailsProvider(widget.jobId));
     final profileState = ref.watch(profileStateProvider);
     final isEmployer = profileState.role == 'employer';
 
@@ -134,11 +217,19 @@ class JobDetailScreen extends ConsumerWidget {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        // AI Match callback
-                      },
-                      icon: const Icon(Icons.auto_awesome),
-                      label: const Text('AI Match'),
+                      onPressed: _isCheckingMatch ? null : () => _handleAiMatch(job),
+                      icon: _isCheckingMatch
+                          ? const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.auto_awesome),
+                      label: Text(
+                        job.cachedMatchScore != null
+                            ? '✨ View Match Result'
+                            : '✨ Analyze Match',
+                      ),
                     ),
                   ),
                 ],

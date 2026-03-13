@@ -15,6 +15,8 @@ final jobsProvider = FutureProvider.family<List<Job>, JobFilters>((ref, filters)
   return jobService.getJobs(
     searchQuery: filters.searchQuery,
     category: filters.category,
+    page: filters.page,
+    limit: filters.limit,
   );
 });
 
@@ -31,8 +33,15 @@ final jobDetailsProvider = FutureProvider.family<Job, String>((ref, jobId) async
 class JobFilters {
   final String? searchQuery;
   final String? category;
+  final int page;
+  final int limit;
 
-  JobFilters({this.searchQuery, this.category});
+  JobFilters({
+    this.searchQuery,
+    this.category,
+    this.page = 1,
+    this.limit = 10,
+  });
 
   @override
   bool operator ==(Object other) =>
@@ -40,10 +49,13 @@ class JobFilters {
       other is JobFilters &&
           runtimeType == other.runtimeType &&
           searchQuery == other.searchQuery &&
-          category == other.category;
+          category == other.category &&
+          page == other.page &&
+          limit == other.limit;
 
   @override
-  int get hashCode => searchQuery.hashCode ^ category.hashCode;
+  int get hashCode => 
+      searchQuery.hashCode ^ category.hashCode ^ page.hashCode ^ limit.hashCode;
 }
 
 class JobService {
