@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:job_board/features/profile/providers/profile_state_provider.dart';
 import '../services/job_service.dart';
 
@@ -23,9 +24,50 @@ class JobDetailScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                InkWell(
+                  onTap: () => context.push('/employer/${job.employerId}'),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundImage: job.companyLogo != null ? NetworkImage(job.companyLogo!) : null,
+                        child: job.companyLogo == null ? const Icon(Icons.business) : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          job.companyName ?? 'Unknown Company',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: Colors.grey),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
                 Text(job.title, style: Theme.of(context).textTheme.headlineMedium),
                 const SizedBox(height: 8),
                 Text('Category: ${job.category}', style: Theme.of(context).textTheme.labelLarge),
+                if (job.location != null && job.location!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(job.location!, style: Theme.of(context).textTheme.bodyMedium),
+                    ],
+                  ),
+                ],
+                if (job.salaryRange != null && job.salaryRange!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.attach_money, size: 16, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(job.salaryRange!, style: Theme.of(context).textTheme.bodyMedium),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 16),
                 Text('Description', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
@@ -44,6 +86,10 @@ class JobDetailScreen extends ConsumerWidget {
                     child: ElevatedButton.icon(
                       onPressed: () {
                         // Apply callback
+                        final contact = job.telegramContact ?? 'employer_handle';
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Would open Telegram to: $contact')),
+                        );
                       },
                       icon: const Icon(Icons.send),
                       label: const Text('Apply via Telegram'),

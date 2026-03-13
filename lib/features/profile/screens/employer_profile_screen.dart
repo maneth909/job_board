@@ -37,6 +37,40 @@ class _EmployerProfileScreenState extends ConsumerState<EmployerProfileScreen> {
     }
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    setState(() => _isLoading = true);
+    try {
+      final profileService = ref.read(profileServiceProvider);
+      final user = profileService.getCurrentUser();
+      if (user != null) {
+        final profile = await profileService.getEmployerProfile(user.id);
+        if (profile != null && mounted) {
+          setState(() {
+            _companyNameController.text = profile['company_name'] as String? ?? '';
+            _selectedIndustry = profile['industry'] as String?;
+            _descriptionController.text = profile['description'] as String? ?? '';
+            _websiteController.text = profile['website'] as String? ?? '';
+            _telegramController.text = profile['telegram_handle'] as String? ?? '';
+            // We can't pre-fill File _logoFile natively from an avatar_url simply, 
+            // but for text fields this works. 
+          });
+        }
+      }
+    } catch (e) {
+      // Ignore initial load errors
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 

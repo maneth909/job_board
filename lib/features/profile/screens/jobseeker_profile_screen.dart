@@ -35,6 +35,42 @@ class _JobseekerProfileScreenState extends ConsumerState<JobseekerProfileScreen>
     }
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    setState(() => _isLoading = true);
+    try {
+      final profileService = ref.read(profileServiceProvider);
+      final user = profileService.getCurrentUser();
+      if (user != null) {
+        final profile = await profileService.getJobseekerProfile(user.id);
+        if (profile != null && mounted) {
+          setState(() {
+            _universityController.text = profile['university'] as String? ?? '';
+            _majorController.text = profile['major'] as String? ?? '';
+            
+            final skills = profile['skills'] as List<dynamic>?;
+            if (skills != null) {
+              _skillsController.text = skills.join(', ');
+            }
+            
+            _bioController.text = profile['bio'] as String? ?? '';
+          });
+        }
+      }
+    } catch (e) {
+      // Ignore initial load errors
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 

@@ -55,7 +55,7 @@ class JobService {
   Future<List<Job>> getJobs({String? searchQuery, String? category}) async {
     var query = supabase
         .from('jobs')
-        .select()
+        .select('*, profiles(avatar_url, employer_profiles(company_name, industry))')
         .eq('is_active', true);
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
@@ -73,7 +73,7 @@ class JobService {
   Future<Job> getJobById(String jobId) async {
     final response = await supabase
         .from('jobs')
-        .select()
+        .select('*, profiles(avatar_url, employer_profiles(company_name, industry))')
         .eq('id', jobId)
         .single();
     return Job.fromMap(response);
@@ -97,6 +97,9 @@ class JobService {
     required String description,
     required List<String> skillsRequired,
     required String category,
+    String? location,
+    String? salaryRange,
+    String? telegramContact,
   }) async {
     final currentUser = ref.read(currentUserProvider);
     if (currentUser == null) throw Exception('User not logged in');
@@ -107,6 +110,9 @@ class JobService {
       'description': description,
       'skills_required': skillsRequired,
       'category': category,
+      'location': location?.trim().isNotEmpty == true ? location : null,
+      'salary_range': salaryRange?.trim().isNotEmpty == true ? salaryRange : null,
+      'telegram_contact': telegramContact?.trim().isNotEmpty == true ? telegramContact : null,
       'is_active': true,
     });
   }
@@ -120,7 +126,11 @@ class JobService {
       'description': job.description,
       'skills_required': job.skillsRequired,
       'category': job.category,
+      'location': job.location,
+      'salary_range': job.salaryRange,
+      'telegram_contact': job.telegramContact,
       'is_active': job.isActive,
+      'updated_at': DateTime.now().toIso8601String(),
     })
     .eq('id', job.id)
     .eq('employer_id', currentUser.id);

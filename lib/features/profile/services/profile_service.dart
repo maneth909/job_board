@@ -9,6 +9,8 @@ class ProfileService {
 
   ProfileService(this._supabase);
 
+  User? getCurrentUser() => _supabase.auth.currentUser;
+
   Future<Map<String, dynamic>?> getProfileStatus() async {
     final user = _supabase.auth.currentUser;
     if (user == null) return null;
@@ -92,5 +94,23 @@ class ProfileService {
       'website': website?.trim().isNotEmpty == true ? website : null,
       'telegram_handle': cleanTelegram,
     });
+  }
+
+  Future<Map<String, dynamic>?> getEmployerProfile(String employerId) async {
+    final response = await _supabase
+        .from('employer_profiles')
+        .select('*, profiles(avatar_url)')
+        .eq('id', employerId)
+        .maybeSingle();
+    return response;
+  }
+
+  Future<Map<String, dynamic>?> getJobseekerProfile(String jobseekerId) async {
+    final response = await _supabase
+        .from('jobseeker_profiles')
+        .select('*, profiles(avatar_url)')
+        .eq('id', jobseekerId)
+        .maybeSingle();
+    return response;
   }
 }

@@ -7,6 +7,7 @@ import '../features/auth/screens/role_selection_screen.dart';
 import '../features/profile/screens/jobseeker_profile_screen.dart';
 import '../features/profile/screens/employer_profile_screen.dart';
 import '../features/profile/screens/cv_upload_screen.dart';
+import '../features/profile/screens/employer_public_profile_screen.dart';
 import '../features/auth/services/auth_service.dart';
 import '../features/profile/providers/profile_state_provider.dart';
 import '../features/jobs/screens/job_listing_screen.dart';
@@ -117,6 +118,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             return const EmployerProfileScreen();
           }
           return const JobseekerProfileScreen();
+        },
+      ),
+      GoRoute(
+        path: '/employer/:id',
+        builder: (context, state) {
+          final employerId = state.pathParameters['id']!;
+          return EmployerPublicProfileScreen(employerId: employerId);
         },
       ),
     ],

@@ -107,9 +107,29 @@ class _JobListingScreenState extends ConsumerState<JobListingScreen> {
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundImage: job.companyLogo != null ? NetworkImage(job.companyLogo!) : null,
+                          child: job.companyLogo == null ? const Icon(Icons.business) : null,
+                        ),
                         title: Text(job.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('${job.category} • ${job.skillsRequired.join(', ')}'),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(job.companyName ?? 'Unknown Company'),
+                            const SizedBox(height: 4),
+                            Wrap(
+                              spacing: 4,
+                              runSpacing: 4,
+                              children: job.skillsRequired.map((skill) => Chip(
+                                label: Text(skill, style: const TextStyle(fontSize: 10)),
+                                padding: EdgeInsets.zero,
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              )).toList(),
+                            ),
+                          ],
+                        ),
                         trailing: const Icon(Icons.chevron_right),
+                        isThreeLine: true,
                         onTap: () => context.push('/jobs/${job.id}'),
                       ),
                     );

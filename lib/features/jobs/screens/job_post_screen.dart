@@ -18,6 +18,9 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _skillsController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _salaryController = TextEditingController();
+  final _telegramController = TextEditingController();
   
   String _category = 'Full-time';
   final List<String> _categories = ['Internship', 'Full-time', 'Part-time'];
@@ -31,6 +34,9 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
       _titleController.text = widget.job!.title;
       _descriptionController.text = widget.job!.description;
       _skillsController.text = widget.job!.skillsRequired.join(', ');
+      _locationController.text = widget.job!.location ?? '';
+      _salaryController.text = widget.job!.salaryRange ?? '';
+      _telegramController.text = widget.job!.telegramContact ?? '';
       if (_categories.contains(widget.job!.category)) {
         _category = widget.job!.category;
       }
@@ -42,6 +48,9 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
     _titleController.dispose();
     _descriptionController.dispose();
     _skillsController.dispose();
+    _locationController.dispose();
+    _salaryController.dispose();
+    _telegramController.dispose();
     super.dispose();
   }
 
@@ -65,6 +74,9 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
           description: _descriptionController.text.trim(),
           skillsRequired: skillsList,
           category: _category,
+          location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
+          salaryRange: _salaryController.text.trim().isEmpty ? null : _salaryController.text.trim(),
+          telegramContact: _telegramController.text.trim().isEmpty ? null : _telegramController.text.trim(),
         );
         await jobService.updateJob(updatedJob);
       } else {
@@ -74,6 +86,9 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
           description: _descriptionController.text.trim(),
           skillsRequired: skillsList,
           category: _category,
+          location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
+          salaryRange: _salaryController.text.trim().isEmpty ? null : _salaryController.text.trim(),
+          telegramContact: _telegramController.text.trim().isEmpty ? null : _telegramController.text.trim(),
         );
       }
 
@@ -145,6 +160,30 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
                   hintText: 'e.g. Flutter, Dart, Firebase',
                 ),
                 validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _locationController,
+                decoration: const InputDecoration(
+                  labelText: 'Location (Optional)',
+                  hintText: 'e.g. Remote, New York',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _salaryController,
+                decoration: const InputDecoration(
+                  labelText: 'Salary Range (Optional)',
+                  hintText: 'e.g. \$200-\$400/month',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _telegramController,
+                decoration: const InputDecoration(
+                  labelText: 'Telegram Contact for Applications (Optional)',
+                  hintText: 'e.g. @employer_handle',
+                ),
               ),
               const SizedBox(height: 32),
               ElevatedButton(
