@@ -9,7 +9,11 @@ import '../features/profile/screens/employer_profile_screen.dart';
 import '../features/profile/screens/cv_upload_screen.dart';
 import '../features/auth/services/auth_service.dart';
 import '../features/profile/providers/profile_state_provider.dart';
-import '../shared/widgets/custom_app_bar.dart';
+import '../features/jobs/screens/job_listing_screen.dart';
+import '../features/jobs/screens/job_detail_screen.dart';
+import '../features/jobs/screens/job_post_screen.dart';
+import '../features/jobs/screens/manage_jobs_screen.dart';
+import '../features/jobs/models/job_model.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -52,7 +56,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
         if (isCompleted && (isAuthRoute || isRoleSelectionRoute || state.matchedLocation.startsWith('/profile-setup'))) {
           // Prevent backstack access to login or profile setup if already completed
-          return '/jobs';
+          return role == 'employer' ? '/jobs/manage' : '/jobs';
         }
       }
 
@@ -73,10 +77,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/jobs',
-        builder: (context, state) => const Scaffold(
-          appBar: CustomAppBar(title: 'Jobs'),
-          body: Center(child: Text('Jobs Placeholder')),
-        ),
+        builder: (context, state) => const JobListingScreen(),
+      ),
+      GoRoute(
+        path: '/jobs/post',
+        builder: (context, state) {
+          final job = state.extra as Job?;
+          return JobPostScreen(job: job);
+        },
+      ),
+      GoRoute(
+        path: '/jobs/manage',
+        builder: (context, state) => const ManageJobsScreen(),
+      ),
+      GoRoute(
+        path: '/jobs/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return JobDetailScreen(jobId: id);
+        },
       ),
       GoRoute(
         path: '/profile-setup/jobseeker',
@@ -89,6 +108,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile/cv-upload',
         builder: (context, state) => const CvUploadScreen(),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) {
+          final profileState = ref.read(profileStateProvider);
+          if (profileState.role == 'employer') {
+            return const EmployerProfileScreen();
+          }
+          return const JobseekerProfileScreen();
+        },
       ),
     ],
   );
