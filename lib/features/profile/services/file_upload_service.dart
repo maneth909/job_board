@@ -42,7 +42,8 @@ class FileUploadService {
           fileOptions: const FileOptions(upsert: true, contentType: 'application/pdf'),
         );
 
-    final publicUrl = _supabase.storage.from('cvs').getPublicUrl(filePath);
+    final publicUrlBase = _supabase.storage.from('cvs').getPublicUrl(filePath);
+    final publicUrl = '$publicUrlBase?t=${DateTime.now().millisecondsSinceEpoch}';
 
     // Update jobseeker profile with cv details
     // Ensure the profile exists before this step, otherwise this update might fail using .update().
