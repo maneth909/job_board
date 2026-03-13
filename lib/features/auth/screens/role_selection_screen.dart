@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../profile/services/profile_service.dart';
 import '../../profile/providers/profile_state_provider.dart';
+import '../services/auth_service.dart';
 
 class RoleSelectionScreen extends ConsumerStatefulWidget {
   const RoleSelectionScreen({super.key});
@@ -38,7 +39,16 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Select Role')),
+      appBar: AppBar(
+        title: const Text('Select Role'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () => ref.read(authServiceProvider).logout(),
+            tooltip: 'Logout',
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

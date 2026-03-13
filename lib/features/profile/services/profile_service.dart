@@ -49,7 +49,7 @@ class ProfileService {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('User not logged in');
 
-    await _supabase.from('profiles').update({'role': role}).eq('id', user.id);
+    await _supabase.from('profiles').upsert({'id': user.id, 'role': role});
   }
 
   Future<void> upsertJobseekerProfile({
