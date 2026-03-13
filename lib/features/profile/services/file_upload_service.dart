@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../../../core/supabase_client.dart';
 
 final fileUploadServiceProvider = Provider(
@@ -44,6 +45,16 @@ class FileUploadService {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('User not logged in');
 
+    String extractedText = '';
+    try {
+      final bytes = await pdfFile.readAsBytes();
+      final document = PdfDocument(inputBytes: bytes);
+      extractedText = PdfTextExtractor(document).extractText();
+      document.dispose();
+    } catch (e) {
+      extractedText = 'Failed to extract text from PDF: $e';
+    }
+
     final filePath = '${user.id}/cv.pdf';
 
     await _supabase.storage
@@ -66,7 +77,11 @@ class FileUploadService {
     // We will assume jobseeker_profiles record is already created by profile setup.
     await _supabase
         .from('jobseeker_profiles')
-        .update({'cv_url': publicUrl, 'cv_filename': originalFilename})
+        .update({
+          'cv_url': publicUrl, 
+          'cv_filename': originalFilename,
+          'cv_text': extractedText,
+        })
         .eq('id', user.id);
 
     return publicUrl;
