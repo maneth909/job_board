@@ -37,10 +37,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         throw const AuthException('Please fill in all fields');
       }
 
-      await ref.read(authServiceProvider).login(
-            email: email,
-            password: password,
-          );
+      await ref
+          .read(authServiceProvider)
+          .login(email: email, password: password);
 
       if (mounted) {
         context.go('/jobs');
@@ -48,13 +47,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } on AuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message), backgroundColor: Theme.of(context).colorScheme.error),
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
         );
       }
     } catch (e) {
-       if (mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('An unexpected error occurred'), backgroundColor: Theme.of(context).colorScheme.error),
+          SnackBar(
+            content: Text('An unexpected error occurred'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
         );
       }
     } finally {
@@ -69,9 +74,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login'),
-      ),
+      appBar: AppBar(title: const Text('Login')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

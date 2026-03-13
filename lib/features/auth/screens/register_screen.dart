@@ -41,7 +41,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         throw const AuthException('Please fill in all fields');
       }
 
-      await ref.read(authServiceProvider).register(
+      await ref
+          .read(authServiceProvider)
+          .register(
             email: email,
             password: password,
             fullName: name,
@@ -58,13 +60,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     } on AuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message), backgroundColor: Theme.of(context).colorScheme.error),
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
         );
       }
     } catch (e) {
-       if (mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('An unexpected error occurred'), backgroundColor: Theme.of(context).colorScheme.error),
+          SnackBar(
+            content: Text('An unexpected error occurred'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
         );
       }
     } finally {
@@ -79,7 +87,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget _buildRoleCard(String role, IconData icon, String label) {
     final isSelected = _selectedRole == role;
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Expanded(
       child: Card(
         color: isSelected ? colorScheme.primaryContainer : colorScheme.surface,
@@ -103,14 +111,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 Icon(
                   icon,
                   size: 40,
-                  color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+                  color: isSelected
+                      ? colorScheme.onPrimaryContainer
+                      : colorScheme.onSurface,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   label,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+                    color: isSelected
+                        ? colorScheme.onPrimaryContainer
+                        : colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -124,9 +136,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Register'),
-      ),
+      appBar: AppBar(title: const Text('Register')),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),

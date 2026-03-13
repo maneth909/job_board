@@ -207,7 +207,9 @@ class _JobPostScreenState extends ConsumerState<JobPostScreen> {
               const SizedBox(height: 16),
               SwitchListTile(
                 title: const Text('Job is Active'),
-                subtitle: const Text('Inactive jobs are hidden from job seekers'),
+                subtitle: const Text(
+                  'Inactive jobs are hidden from job seekers',
+                ),
                 value: _isActive,
                 onChanged: (val) => setState(() => _isActive = val),
               ),

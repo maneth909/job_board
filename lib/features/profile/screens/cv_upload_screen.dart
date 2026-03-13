@@ -60,7 +60,7 @@ class _CvUploadScreenState extends ConsumerState<CvUploadScreen> {
     if (result != null && result.files.single.path != null) {
       final file = File(result.files.single.path!);
       final fileSize = await file.length();
-      
+
       // Check 5MB limit
       if (fileSize > 5 * 1024 * 1024) {
         if (mounted) {
@@ -89,7 +89,7 @@ class _CvUploadScreenState extends ConsumerState<CvUploadScreen> {
     try {
       final fileUploadService = ref.read(fileUploadServiceProvider);
       final url = await fileUploadService.uploadCv(_selectedPdf!, _fileName!);
-      
+
       setState(() {
         _uploadedUrl = url;
         _existingCvUrl = url;
@@ -103,9 +103,9 @@ class _CvUploadScreenState extends ConsumerState<CvUploadScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error uploading CV: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error uploading CV: $e')));
       }
     } finally {
       if (mounted) {
@@ -128,45 +128,70 @@ class _CvUploadScreenState extends ConsumerState<CvUploadScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (_existingCvFilename != null) ...[
-                    const Text('Current CV:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const Text(
+                      'Current CV:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Text(_existingCvFilename!),
                     if (_existingCvUrl != null) ...[
                       const SizedBox(height: 8),
                       SelectableText(
                         'Public URL: $_existingCvUrl',
-                        style: const TextStyle(color: Colors.blue, fontSize: 12),
+                        style: const TextStyle(
+                          color: Colors.blue,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                     const SizedBox(height: 24),
                     const Divider(),
                     const SizedBox(height: 24),
                   ],
-                  if (_fileName != null && _fileName != _existingCvFilename) ...[
-                    const Text('Selected File (New):', style: TextStyle(fontWeight: FontWeight.bold)),
+                  if (_fileName != null &&
+                      _fileName != _existingCvFilename) ...[
+                    const Text(
+                      'Selected File (New):',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 8),
                     Text(_fileName!),
                     const SizedBox(height: 24),
                   ],
-            ElevatedButton.icon(
-              onPressed: _isUploading ? null : _pickPdf,
-              icon: const Icon(Icons.picture_as_pdf),
-              label: const Text('Choose PDF'),
+                  ElevatedButton.icon(
+                    onPressed: _isUploading ? null : _pickPdf,
+                    icon: const Icon(Icons.picture_as_pdf),
+                    label: const Text('Choose PDF'),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _selectedPdf == null || _isUploading
+                        ? null
+                        : _uploadPdf,
+                    child: _isUploading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Upload CV'),
+                  ),
+                  if (_uploadedUrl != null) ...[
+                    const SizedBox(height: 24),
+                    const Text(
+                      'CV Uploaded!',
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _selectedPdf == null || _isUploading ? null : _uploadPdf,
-              child: _isUploading
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Upload CV'),
-            ),
-            if (_uploadedUrl != null) ...[
-              const SizedBox(height: 24),
-              const Text('CV Uploaded!', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-            ]
-          ],
-        ),
-      ),
     );
   }
 }
