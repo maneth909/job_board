@@ -45,6 +45,13 @@ class ProfileService {
     return {'role': role, 'isCompleted': isCompleted};
   }
 
+  Future<void> updateRole(String role) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('User not logged in');
+
+    await _supabase.from('profiles').update({'role': role}).eq('id', user.id);
+  }
+
   Future<void> upsertJobseekerProfile({
     required String university,
     required String major,
