@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/supabase_client.dart';
+import '../../../features/auth/services/auth_service.dart';
 
 final profileServiceProvider = Provider((ref) => ProfileService(supabase));
 
@@ -118,5 +119,10 @@ class ProfileService {
         .eq('id', jobseekerId)
         .maybeSingle();
     return response;
+  }
+
+  Future<void> updateFullName(String fullName) async {
+    final authService = AuthService();
+    await authService.updateFullName(fullName);
   }
 }

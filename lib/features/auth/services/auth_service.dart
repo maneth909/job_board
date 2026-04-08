@@ -33,6 +33,13 @@ class AuthService {
   Future<void> logout() async {
     await supabase.auth.signOut();
   }
+
+  Future<User?> updateFullName(String fullName) async {
+    final response = await supabase.auth.updateUser(
+      UserAttributes(data: {'full_name': fullName}),
+    );
+    return response.user;
+  }
 }
 
 final authServiceProvider = Provider<AuthService>((ref) {

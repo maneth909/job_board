@@ -1,11 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/profile_service.dart';
-import '../services/file_upload_service.dart';
-import '../providers/profile_state_provider.dart';
-import '../../../shared/widgets/custom_app_bar.dart';
 
 class EmployerProfileScreen extends ConsumerStatefulWidget {
   const EmployerProfileScreen({super.key});
@@ -16,33 +13,9 @@ class EmployerProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _EmployerProfileScreenState extends ConsumerState<EmployerProfileScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _companyNameController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _websiteController = TextEditingController();
-  final _telegramController = TextEditingController();
-
-  String? _selectedIndustry;
-  final List<String> _industries = [
-    'Technology',
-    'Healthcare',
-    'Finance',
-    'Education',
-    'Other',
-  ];
-
-  File? _logoFile;
-  bool _isLoading = false;
-
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _logoFile = File(pickedFile.path);
-      });
-    }
-  }
+  bool _isLoading = true;
+  Map<String, dynamic>? _profile;
+  String _fullName = 'Manager';
 
   @override
   void initState() {
@@ -55,25 +28,23 @@ class _EmployerProfileScreenState extends ConsumerState<EmployerProfileScreen> {
     try {
       final profileService = ref.read(profileServiceProvider);
       final user = profileService.getCurrentUser();
+
       if (user != null) {
+        _fullName = user.userMetadata?['full_name'] as String? ?? 'Manager';
         final profile = await profileService.getEmployerProfile(user.id);
-        if (profile != null && mounted) {
+
+        if (mounted) {
           setState(() {
-            _companyNameController.text =
-                profile['company_name'] as String? ?? '';
-            _selectedIndustry = profile['industry'] as String?;
-            _descriptionController.text =
-                profile['description'] as String? ?? '';
-            _websiteController.text = profile['website'] as String? ?? '';
-            _telegramController.text =
-                profile['telegram_handle'] as String? ?? '';
-            // We can't pre-fill File _logoFile natively from an avatar_url simply,
-            // but for text fields this works.
+            _profile = profile;
           });
         }
       }
     } catch (e) {
-      // Ignore initial load errors
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load profile: $e')));
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -81,149 +52,317 @@ class _EmployerProfileScreenState extends ConsumerState<EmployerProfileScreen> {
     }
   }
 
-  Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
+  Future<void> _handleLogout() async {
     try {
-      final profileService = ref.read(profileServiceProvider);
-      final fileUploadService = ref.read(fileUploadServiceProvider);
-
-      if (_logoFile != null) {
-        await fileUploadService.uploadAvatar(
-          _logoFile!,
-        ); // treating logo as avatar in profiles
-      }
-
-      await profileService.upsertEmployerProfile(
-        companyName: _companyNameController.text,
-        industry: _selectedIndustry,
-        description: _descriptionController.text.isNotEmpty
-            ? _descriptionController.text
-            : null,
-        website: _websiteController.text.isNotEmpty
-            ? _websiteController.text
-            : null,
-        telegramHandle: _telegramController.text,
-      );
-
-      ref.read(profileStateProvider.notifier).markAsCompleted();
-
+      await Supabase.instance.client.auth.signOut();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Profile saved!')));
+        context.go('/login');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        ).showSnackBar(SnackBar(content: Text('Error logging out: $e')));
       }
     }
   }
 
   @override
-  void dispose() {
-    _companyNameController.dispose();
-    _descriptionController.dispose();
-    _websiteController.dispose();
-    _telegramController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: colorScheme.surface,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final String companyName =
+        _profile?['company_name'] as String? ?? 'Set up your company';
+    final String industry =
+        _profile?['industry'] as String? ?? 'No industry specified';
+    final String description =
+        _profile?['description'] as String? ??
+        'No description added yet. Tap edit to tell candidates about your company!';
+    final String website =
+        _profile?['website'] as String? ?? 'No website added';
+    final String telegram =
+        _profile?['telegram_handle'] as String? ?? 'No telegram added';
+
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Employer Profile'),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
+      backgroundColor: colorScheme.surface,
+      appBar: AppBar(
+        backgroundColor: colorScheme.surface,
+        elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: _handleLogout,
+            icon: const Icon(Icons.logout_rounded, color: Colors.black87),
+            tooltip: 'Logout',
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadProfileData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Center(
-                child: InkWell(
-                  onTap: _pickImage,
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundImage: _logoFile != null
-                        ? FileImage(_logoFile!)
-                        : null,
-                    child: _logoFile == null
-                        ? const Icon(Icons.business, size: 40)
-                        : null,
+              // Avatar with Edit Badge
+              Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: colorScheme.primary.withOpacity(0.2),
+                        width: 2,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 54,
+                      backgroundColor: colorScheme.onSurface.withOpacity(0.05),
+                      backgroundImage: _profile?['avatar_url'] != null
+                          ? NetworkImage(_profile!['avatar_url'])
+                          : null,
+                      child: _profile?['avatar_url'] == null
+                          ? Icon(
+                              Icons.business,
+                              size: 48,
+                              color: colorScheme.primary.withOpacity(0.6),
+                            )
+                          : null,
+                    ),
+                  ),
+                  // Edit Badge
+                  GestureDetector(
+                    onTap: () async {
+                      // Ensure you have registered this route in your GoRouter!
+                      await context.push('/profile/employer-edit');
+                      _loadProfileData(); // Syncs data upon return
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: colorScheme.surface,
+                          width: 4,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Company Name
+              Text(
+                companyName,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: colorScheme.onSurface,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 6),
+
+              // Managed By
+              Text(
+                'Managed by $_fullName',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurface.withOpacity(0.5),
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Placeholder Stats Row
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withOpacity(0.03),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildStatItem('4', 'Active Jobs', colorScheme),
+                    _buildVerticalDivider(colorScheme),
+                    _buildStatItem('42', 'Applicants', colorScheme),
+                    _buildVerticalDivider(colorScheme),
+                    _buildStatItem('12', 'Hired', colorScheme),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // About Company
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'About Company',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-              TextFormField(
-                controller: _companyNameController,
-                decoration: const InputDecoration(labelText: 'Company Name *'),
-                validator: (value) =>
-                    value == null || value.trim().isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedIndustry,
-                decoration: const InputDecoration(labelText: 'Industry'),
-                items: _industries.map((industry) {
-                  return DropdownMenuItem(
-                    value: industry,
-                    child: Text(industry),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedIndustry = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _websiteController,
-                decoration: const InputDecoration(labelText: 'Website'),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _telegramController,
-                decoration: const InputDecoration(
-                  labelText: 'Telegram Handle *',
-                  prefixText: '@',
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.6,
+                    color: colorScheme.onSurface.withOpacity(0.6),
+                  ),
                 ),
-                validator: (value) =>
-                    value == null || value.trim().isEmpty ? 'Required' : null,
               ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _saveProfile,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Save Profile'),
+
+              const SizedBox(height: 32),
+
+              // Details Details
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Company Details',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
               ),
+              const SizedBox(height: 16),
+
+              _buildDetailTile(
+                Icons.category_rounded,
+                'Industry',
+                industry,
+                colorScheme,
+              ),
+              const SizedBox(height: 12),
+              _buildDetailTile(
+                Icons.language_rounded,
+                'Website',
+                website,
+                colorScheme,
+              ),
+              const SizedBox(height: 12),
+              _buildDetailTile(
+                Icons.telegram,
+                'Telegram Contact',
+                '@$telegram',
+                colorScheme,
+              ),
+
+              const SizedBox(height: 40),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String number, String label, ColorScheme colorScheme) {
+    return Column(
+      children: [
+        Text(
+          number,
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: colorScheme.onSurface.withOpacity(0.5),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVerticalDivider(ColorScheme colorScheme) {
+    return Container(
+      height: 40,
+      width: 1,
+      color: colorScheme.onSurface.withOpacity(0.1),
+    );
+  }
+
+  Widget _buildDetailTile(
+    IconData icon,
+    String title,
+    String subtitle,
+    ColorScheme colorScheme,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.onSurface.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: colorScheme.primary, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface.withOpacity(0.5),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

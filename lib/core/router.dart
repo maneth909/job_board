@@ -17,6 +17,8 @@ import '../features/jobs/screens/job_post_screen.dart';
 import '../features/jobs/screens/manage_jobs_screen.dart';
 import '../features/jobs/models/job_model.dart';
 import '../shared/screens/main_layout_screen.dart';
+import '../features/profile/screens/jobseeker_edit_profile_screen.dart';
+import '../features/profile/screens/employer_edit_profile_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -138,6 +140,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           final employerId = state.pathParameters['id']!;
           return EmployerPublicProfileScreen(employerId: employerId);
         },
+      ),
+      GoRoute(
+        path: '/profile/edit',
+        builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/profile/employer-edit',
+        builder: (context, state) => const EditEmployerProfileScreen(),
       ),
     ],
   );

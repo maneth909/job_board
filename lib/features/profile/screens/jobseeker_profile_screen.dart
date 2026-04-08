@@ -1,12 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/profile_service.dart';
-import '../services/file_upload_service.dart';
-import '../providers/profile_state_provider.dart';
-import '../../../shared/widgets/custom_app_bar.dart';
 
 class JobseekerProfileScreen extends ConsumerStatefulWidget {
   const JobseekerProfileScreen({super.key});
@@ -18,24 +14,9 @@ class JobseekerProfileScreen extends ConsumerStatefulWidget {
 
 class _JobseekerProfileScreenState
     extends ConsumerState<JobseekerProfileScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _universityController = TextEditingController();
-  final _majorController = TextEditingController();
-  final _skillsController = TextEditingController();
-  final _bioController = TextEditingController();
-
-  File? _avatarFile;
-  bool _isLoading = false;
-
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _avatarFile = File(pickedFile.path);
-      });
-    }
-  }
+  bool _isLoading = true;
+  Map<String, dynamic>? _profile;
+  String _fullName = 'User';
 
   @override
   void initState() {
@@ -48,24 +29,25 @@ class _JobseekerProfileScreenState
     try {
       final profileService = ref.read(profileServiceProvider);
       final user = profileService.getCurrentUser();
+
       if (user != null) {
+        // Fetch name from auth metadata
+        _fullName = user.userMetadata?['full_name'] as String? ?? 'User';
+
+        // Fetch all other data directly from your DB
         final profile = await profileService.getJobseekerProfile(user.id);
-        if (profile != null && mounted) {
+        if (mounted) {
           setState(() {
-            _universityController.text = profile['university'] as String? ?? '';
-            _majorController.text = profile['major'] as String? ?? '';
-
-            final skills = profile['skills'] as List<dynamic>?;
-            if (skills != null) {
-              _skillsController.text = skills.join(', ');
-            }
-
-            _bioController.text = profile['bio'] as String? ?? '';
+            _profile = profile;
           });
         }
       }
     } catch (e) {
-      // Ignore initial load errors
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load profile: $e')));
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -73,134 +55,371 @@ class _JobseekerProfileScreenState
     }
   }
 
-  Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
+  Future<void> _handleLogout() async {
     try {
-      final profileService = ref.read(profileServiceProvider);
-      final fileUploadService = ref.read(fileUploadServiceProvider);
-
-      if (_avatarFile != null) {
-        await fileUploadService.uploadAvatar(_avatarFile!);
-      }
-
-      await profileService.upsertJobseekerProfile(
-        university: _universityController.text,
-        major: _majorController.text,
-        skillsString: _skillsController.text.isNotEmpty
-            ? _skillsController.text
-            : null,
-        bio: _bioController.text.isNotEmpty ? _bioController.text : null,
-      );
-
-      ref.read(profileStateProvider.notifier).markAsCompleted();
-
+      await Supabase.instance.client.auth.signOut();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Profile saved!')));
+        context.go('/login');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        ).showSnackBar(SnackBar(content: Text('Error logging out: $e')));
       }
     }
   }
 
   @override
-  void dispose() {
-    _universityController.dispose();
-    _majorController.dispose();
-    _skillsController.dispose();
-    _bioController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: colorScheme.surface,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Dynamic Data Extraction (Fallback strings if DB is empty)
+    final String university = _profile?['university'] as String? ?? '';
+    final String major = _profile?['major'] as String? ?? '';
+    final String bio =
+        _profile?['bio'] as String? ??
+        'No bio added yet. Tap edit to tell us about yourself!';
+    final List<dynamic> skills = _profile?['skills'] as List<dynamic>? ?? [];
+    final String? cvFilename = _profile?['cv_filename'] as String?;
+
+    // Format Education Text dynamically
+    String educationText = 'Add your education details';
+    if (university.isNotEmpty && major.isNotEmpty) {
+      educationText = '$major at $university';
+    } else if (university.isNotEmpty) {
+      educationText = university;
+    } else if (major.isNotEmpty) {
+      educationText = major;
+    }
+
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Jobseeker Profile'),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
+      backgroundColor: colorScheme.surface,
+      appBar: AppBar(
+        backgroundColor: colorScheme.surface,
+        elevation: 0,
+        // Removed "Profile" title text
+        actions: [
+          // Modern Logout Button moved to Top Right
+          IconButton(
+            onPressed: _handleLogout,
+            icon: const Icon(Icons.logout_rounded, color: Colors.black87),
+            tooltip: 'Logout',
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadProfileData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Center(
-                child: InkWell(
-                  onTap: _pickImage,
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundImage: _avatarFile != null
-                        ? FileImage(_avatarFile!)
-                        : null,
-                    child: _avatarFile == null
-                        ? const Icon(Icons.camera_alt, size: 40)
-                        : null,
+              // Avatar with Edit Badge
+              Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: colorScheme.primary.withOpacity(0.2),
+                        width: 2,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 54,
+                      backgroundColor: colorScheme.onSurface.withOpacity(0.05),
+                      backgroundImage: _profile?['avatar_url'] != null
+                          ? NetworkImage(_profile!['avatar_url'])
+                          : null,
+                      child: _profile?['avatar_url'] == null
+                          ? Icon(
+                              Icons.person,
+                              size: 48,
+                              color: colorScheme.onSurface.withOpacity(0.4),
+                            )
+                          : null,
+                    ),
+                  ),
+                  // Edit Badge (Syncs data when returning)
+                  GestureDetector(
+                    onTap: () async {
+                      // Navigate to edit screen and wait for it to pop
+                      await context.push('/profile/edit');
+                      // Re-fetch data from DB to sync UI
+                      _loadProfileData();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: colorScheme.surface,
+                          width: 4,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Dynamic Name
+              Text(
+                _fullName,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 6),
+
+              // Dynamic Education
+              Text(
+                educationText,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Hardcoded Stats Row (As requested)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withOpacity(0.03),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildStatItem('12', 'Applied', colorScheme),
+                    _buildVerticalDivider(colorScheme),
+                    _buildStatItem('5', 'Saved', colorScheme),
+                    _buildVerticalDivider(colorScheme),
+                    _buildStatItem('3', 'Interviews', colorScheme),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Dynamic About Me
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'About Me',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-              TextFormField(
-                controller: _universityController,
-                decoration: const InputDecoration(labelText: 'University *'),
-                validator: (value) =>
-                    value == null || value.trim().isEmpty ? 'Required' : null,
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  bio,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.6,
+                    color: colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _majorController,
-                decoration: const InputDecoration(labelText: 'Major *'),
-                validator: (value) =>
-                    value == null || value.trim().isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _skillsController,
-                decoration: const InputDecoration(
-                  labelText: 'Skills (comma separated)',
+
+              const SizedBox(height: 32),
+
+              // Dynamic Skills
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Skills',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _bioController,
-                decoration: const InputDecoration(labelText: 'Bio'),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _saveProfile,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: skills.isEmpty
+                    ? Text(
+                        'No skills added yet.',
+                        style: TextStyle(
+                          color: colorScheme.onSurface.withOpacity(0.5),
+                        ),
                       )
-                    : const Text('Save Profile'),
+                    : Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: skills
+                            .map(
+                              (skill) =>
+                                  _buildSkillTag(skill.toString(), colorScheme),
+                            )
+                            .toList(),
+                      ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Dynamic CV Section
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Resume / CV',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: () {
-                  context.push('/profile/cv-upload');
-                },
-                child: const Text('Upload CV (PDF)'),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.picture_as_pdf_rounded,
+                        color: Colors.red,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            cvFilename ?? 'No CV Uploaded',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          if (cvFilename != null)
+                            Text(
+                              'PDF Document',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colorScheme.onSurface.withOpacity(0.5),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(height: 40),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Hardcoded Stats Builder
+  Widget _buildStatItem(String number, String label, ColorScheme colorScheme) {
+    return Column(
+      children: [
+        Text(
+          number,
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: colorScheme.onSurface.withOpacity(0.5),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVerticalDivider(ColorScheme colorScheme) {
+    return Container(
+      height: 40,
+      width: 1,
+      color: colorScheme.onSurface.withOpacity(0.1),
+    );
+  }
+
+  Widget _buildSkillTag(String text, ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.check_circle_rounded,
+            size: 16,
+            color: colorScheme.primary,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface.withOpacity(0.8),
+            ),
+          ),
+        ],
       ),
     );
   }
