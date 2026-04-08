@@ -396,7 +396,7 @@ class _JobListingScreenState extends ConsumerState<JobListingScreen> {
           border: Border.all(color: colorScheme.outline.withOpacity(0.4)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withOpacity(0.1),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),

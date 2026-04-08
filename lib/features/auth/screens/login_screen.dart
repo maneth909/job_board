@@ -17,6 +17,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _rememberMe = false;
+  bool _obscurePassword = true; // Added state for password visibility
 
   @override
   void dispose() {
@@ -72,7 +73,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  // Helper method to keep inputs aligned and code clean
+  // Updated helper method to handle password visibility toggle
   Widget _buildInputField({
     required String label,
     required String hint,
@@ -95,15 +96,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
         TextField(
           controller: controller,
-          obscureText: isPassword,
+          obscureText: isPassword ? _obscurePassword : false,
           keyboardType: keyboardType,
           style: TextStyle(color: colorScheme.onSurface),
           decoration: InputDecoration(
-            isDense: true, // Reduces default vertical padding
+            isDense: true,
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
             hintText: hint,
             hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.3)),
-            // Tighter constraints pull the icon flush with the left edge
             prefixIconConstraints: const BoxConstraints(
               minWidth: 32,
               minHeight: 32,
@@ -116,11 +116,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 color: colorScheme.onSurface.withOpacity(0.4),
               ),
             ),
+            suffixIconConstraints: const BoxConstraints(
+              minWidth: 32,
+              minHeight: 32,
+            ),
             suffixIcon: isPassword
-                ? Icon(
-                    Icons.visibility_off_outlined,
-                    size: 20,
-                    color: colorScheme.onSurface.withOpacity(0.4),
+                ? GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                    child: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      size: 20,
+                      color: colorScheme.onSurface.withOpacity(0.4),
+                    ),
                   )
                 : null,
             enabledBorder: UnderlineInputBorder(
@@ -145,16 +158,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Texture Mockup
+          // Background Texture
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             height: size.height * 0.6,
             child: Container(
-              color: colorScheme.primary.withOpacity(0.8), // Fallback
+              color: colorScheme.primary.withOpacity(0.8),
               child: Image.asset(
-                'assets/bg_texture.jpg',
+                'assets/bg_texture.png', // Or .jpg depending on what you saved
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(),
               ),
@@ -212,28 +225,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                           const SizedBox(height: 16),
 
+                          // Fixed Remember Me Row
                           Row(
                             children: [
                               SizedBox(
-                                height: 24,
-                                width: 24,
+                                height: 20, // Tighter bounds
+                                width: 20,
                                 child: Checkbox(
                                   value: _rememberMe,
                                   onChanged: (value) {
                                     setState(() => _rememberMe = value!);
                                   },
                                   activeColor: colorScheme.primary,
+                                  // This removes the built-in padding
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(4),
                                   ),
+                                  side: BorderSide(
+                                    color: colorScheme.outline.withOpacity(0.9),
+                                    width: 1.5,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 10),
                               Text(
                                 'Remember Me',
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
                                   color: colorScheme.onSurface.withOpacity(0.7),
                                 ),
                               ),
@@ -243,13 +264,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.zero,
                                   minimumSize: Size.zero,
+                                  // Removes button padding to align perfectly right
                                   tapTargetSize:
                                       MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 child: Text(
                                   'Forgot Password?',
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                     color: colorScheme.primary,
                                   ),
