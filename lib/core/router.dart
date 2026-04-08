@@ -16,6 +16,7 @@ import '../features/ai/screens/ai_match_screen.dart';
 import '../features/jobs/screens/job_post_screen.dart';
 import '../features/jobs/screens/manage_jobs_screen.dart';
 import '../features/jobs/models/job_model.dart';
+import '../shared/screens/main_layout_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -82,7 +83,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/jobs',
-        builder: (context, state) => const JobListingScreen(),
+        builder: (context, state) => const MainLayoutScreen(),
       ),
       GoRoute(
         path: '/jobs/post',

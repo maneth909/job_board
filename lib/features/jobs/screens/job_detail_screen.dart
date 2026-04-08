@@ -47,12 +47,20 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
       } else {
         // State 1: First Time Analysis
         final profileService = ref.read(profileServiceProvider);
-        final jsProfile = await profileService.getJobseekerProfile(currentUser.id);
+        final jsProfile = await profileService.getJobseekerProfile(
+          currentUser.id,
+        );
 
-        if (jsProfile == null || jsProfile['cv_text'] == null || jsProfile['cv_text'].toString().trim().isEmpty) {
+        if (jsProfile == null ||
+            jsProfile['cv_text'] == null ||
+            jsProfile['cv_text'].toString().trim().isEmpty) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Please upload your CV in your Profile first to use AI Match.')),
+              const SnackBar(
+                content: Text(
+                  'Please upload your CV in your Profile first to use AI Match.',
+                ),
+              ),
             );
           }
           setState(() {
@@ -79,9 +87,9 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to analyze match: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to analyze match: $e')));
       }
     } finally {
       if (mounted) {
@@ -217,7 +225,9 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: _isCheckingMatch ? null : () => _handleAiMatch(job),
+                      onPressed: _isCheckingMatch
+                          ? null
+                          : () => _handleAiMatch(job),
                       icon: _isCheckingMatch
                           ? const SizedBox(
                               height: 16,

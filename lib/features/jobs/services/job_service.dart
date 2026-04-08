@@ -4,19 +4,17 @@ import 'package:job_board/features/auth/services/auth_service.dart';
 import '../models/job_model.dart';
 
 final jobServiceProvider = Provider<JobService>((ref) {
-  return JobService(
-    supabase: Supabase.instance.client,
-    ref: ref,
-  );
+  return JobService(supabase: Supabase.instance.client, ref: ref);
 });
 
-final jobsProvider = FutureProvider.family<List<Job>, JobFilters>((ref, filters) async {
+final jobsProvider = FutureProvider.family<List<Job>, JobFilters>((
+  ref,
+  filters,
+) async {
   final jobService = ref.watch(jobServiceProvider);
   return jobService.getJobs(
     searchQuery: filters.searchQuery,
     category: filters.category,
-    page: filters.page,
-    limit: filters.limit,
   );
 });
 
@@ -25,7 +23,10 @@ final myJobsProvider = FutureProvider<List<Job>>((ref) async {
   return jobService.getMyJobs();
 });
 
-final jobDetailsProvider = FutureProvider.family<Job, String>((ref, jobId) async {
+final jobDetailsProvider = FutureProvider.family<Job, String>((
+  ref,
+  jobId,
+) async {
   final jobService = ref.watch(jobServiceProvider);
   return jobService.getJobById(jobId);
 });
@@ -33,15 +34,8 @@ final jobDetailsProvider = FutureProvider.family<Job, String>((ref, jobId) async
 class JobFilters {
   final String? searchQuery;
   final String? category;
-  final int page;
-  final int limit;
 
-  JobFilters({
-    this.searchQuery,
-    this.category,
-    this.page = 1,
-    this.limit = 10,
-  });
+  JobFilters({this.searchQuery, this.category});
 
   @override
   bool operator ==(Object other) =>
@@ -49,13 +43,10 @@ class JobFilters {
       other is JobFilters &&
           runtimeType == other.runtimeType &&
           searchQuery == other.searchQuery &&
-          category == other.category &&
-          page == other.page &&
-          limit == other.limit;
+          category == other.category;
 
   @override
-  int get hashCode => 
-      searchQuery.hashCode ^ category.hashCode ^ page.hashCode ^ limit.hashCode;
+  int get hashCode => searchQuery.hashCode ^ category.hashCode;
 }
 
 class JobService {
@@ -82,12 +73,14 @@ class JobService {
   Future<List<Job>> getJobs({
     String? searchQuery,
     String? category,
-    int page = 1,
+    int offset = 0,
     int limit = 10,
   }) async {
     var query = supabase
         .from('jobs')
-        .select('*, profiles(avatar_url, employer_profiles(company_name, industry)), cv_matches(score)')
+        .select(
+          '*, profiles(avatar_url, employer_profiles(company_name, industry)), cv_matches(score)',
+        )
         .eq('is_active', true);
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
@@ -98,17 +91,18 @@ class JobService {
       query = query.eq('category', category);
     }
 
-    final from = (page - 1) * limit;
-    final to = from + limit - 1;
-
-    final response = await query.order('created_at', ascending: false).range(from, to);
+    final response = await query
+        .order('created_at', ascending: false)
+        .range(offset, offset + limit - 1);
     return (response as List<dynamic>).map((job) => Job.fromMap(job)).toList();
   }
 
   Future<Job> getJobById(String jobId) async {
     final response = await supabase
         .from('jobs')
-        .select('*, profiles(avatar_url, employer_profiles(company_name, industry))')
+        .select(
+          '*, profiles(avatar_url, employer_profiles(company_name, industry))',
+        )
         .eq('id', jobId)
         .single();
     return Job.fromMap(response);
@@ -147,8 +141,12 @@ class JobService {
       'skills_required': skillsRequired,
       'category': category,
       'location': location?.trim().isNotEmpty == true ? location : null,
-      'salary_range': salaryRange?.trim().isNotEmpty == true ? salaryRange : null,
-      'telegram_contact': telegramContact?.trim().isNotEmpty == true ? telegramContact : null,
+      'salary_range': salaryRange?.trim().isNotEmpty == true
+          ? salaryRange
+          : null,
+      'telegram_contact': telegramContact?.trim().isNotEmpty == true
+          ? telegramContact
+          : null,
       'is_active': isActive,
     });
   }
@@ -162,7 +160,8 @@ class JobService {
       location: job.location,
       salaryRange: job.salaryRange,
       telegramContact: job.telegramContact,
-      isActive: false, // Copies start as inactive so employer can edit before publishing
+      isActive:
+          false, // Copies start as inactive so employer can edit before publishing
     );
   }
 
@@ -170,19 +169,21 @@ class JobService {
     final currentUser = ref.read(currentUserProvider);
     if (currentUser == null) throw Exception('User not logged in');
 
-    await supabase.from('jobs').update({
-      'title': job.title,
-      'description': job.description,
-      'skills_required': job.skillsRequired,
-      'category': job.category,
-      'location': job.location,
-      'salary_range': job.salaryRange,
-      'telegram_contact': job.telegramContact,
-      'is_active': job.isActive,
-      'updated_at': DateTime.now().toIso8601String(),
-    })
-    .eq('id', job.id)
-    .eq('employer_id', currentUser.id);
+    await supabase
+        .from('jobs')
+        .update({
+          'title': job.title,
+          'description': job.description,
+          'skills_required': job.skillsRequired,
+          'category': job.category,
+          'location': job.location,
+          'salary_range': job.salaryRange,
+          'telegram_contact': job.telegramContact,
+          'is_active': job.isActive,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', job.id)
+        .eq('employer_id', currentUser.id);
   }
 
   Future<void> deleteJob(String jobId) async {
