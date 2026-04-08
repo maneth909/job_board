@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // Light Mode Colors
 const _lightPrimary = Color(0xFF0C36FA);
@@ -35,10 +36,12 @@ final ThemeData lightTheme = ThemeData(
   ),
   scaffoldBackgroundColor: _lightBackground,
   dividerColor: _lightBorder,
-  textTheme: const TextTheme(
-    bodyLarge: TextStyle(color: _lightTextBlack),
-    bodyMedium: TextStyle(color: _lightTextBlack),
-    bodySmall: TextStyle(color: _lightMuted),
+  textTheme: GoogleFonts.interTextTheme(
+    const TextTheme(
+      bodyLarge: TextStyle(color: _lightTextBlack),
+      bodyMedium: TextStyle(color: _lightTextBlack),
+      bodySmall: TextStyle(color: _lightMuted),
+    ),
   ),
   appBarTheme: const AppBarTheme(
     backgroundColor: _lightBackground,
@@ -64,10 +67,12 @@ final ThemeData darkTheme = ThemeData(
   ),
   scaffoldBackgroundColor: _darkBackground,
   dividerColor: _darkBorder,
-  textTheme: const TextTheme(
-    bodyLarge: TextStyle(color: _darkTextForeground),
-    bodyMedium: TextStyle(color: _darkTextForeground),
-    bodySmall: TextStyle(color: _darkMuted),
+  textTheme: GoogleFonts.interTextTheme(
+    const TextTheme(
+      bodyLarge: TextStyle(color: _darkTextForeground),
+      bodyMedium: TextStyle(color: _darkTextForeground),
+      bodySmall: TextStyle(color: _darkMuted),
+    ),
   ),
   appBarTheme: const AppBarTheme(
     backgroundColor: _darkBackground,
