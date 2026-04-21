@@ -50,12 +50,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             role: _selectedRole,
           );
 
+      // Sign out immediately so the auto-session from signUp doesn't
+      // bypass the login screen and trap the user in profile-setup.
+      await ref.read(authServiceProvider).logout();
+
       if (mounted) {
-        if (_selectedRole == 'jobseeker') {
-          context.go('/profile-setup/jobseeker');
-        } else {
-          context.go('/profile-setup/employer');
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Account created successfully! Please log in.'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        context.go('/login');
       }
     } on AuthException catch (e) {
       if (mounted) {

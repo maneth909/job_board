@@ -46,27 +46,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
 
         final role = profileState.role;
-        final isCompleted = profileState.isCompleted;
 
         if (role == null && !isRoleSelectionRoute) {
           return '/role-selection';
         }
 
-        if (role != null && !isCompleted) {
-          final targetSetupRoute = role == 'jobseeker'
-              ? '/profile-setup/jobseeker'
-              : '/profile-setup/employer';
-          if (state.matchedLocation != targetSetupRoute &&
-              state.matchedLocation != '/profile/cv-upload') {
-            return targetSetupRoute;
-          }
-        }
-
-        if (isCompleted &&
+        if (role != null &&
             (isAuthRoute ||
                 isRoleSelectionRoute ||
                 state.matchedLocation.startsWith('/profile-setup'))) {
-          // Prevent backstack access to login or profile setup if already completed
+          // Redirect authenticated users with a role to the main app,
+          // preventing them from staying on login/register or legacy setup screens.
           return role == 'employer' ? '/jobs/manage' : '/jobs';
         }
       }
