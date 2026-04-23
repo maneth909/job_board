@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:job_board/features/profile/providers/profile_state_provider.dart';
@@ -8,6 +9,8 @@ import '../models/job_model.dart';
 import '../../../core/supabase_client.dart';
 import '../../ai/services/groq_service.dart';
 import '../../profile/services/profile_service.dart';
+import '../../saved_jobs/services/saved_jobs_service.dart';
+import '../../applications/services/applications_service.dart';
 
 class JobDetailScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -20,6 +23,86 @@ class JobDetailScreen extends ConsumerStatefulWidget {
 
 class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
   bool _isCheckingMatch = false;
+  bool _isSaved = false;
+  bool _isApplied = false;
+  bool _isTogglingBookmark = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSaveApplyState();
+  }
+
+  Future<void> _loadSaveApplyState() async {
+    try {
+      final savedService = ref.read(savedJobsServiceProvider);
+      final appsService = ref.read(applicationsServiceProvider);
+      final saved = await savedService.isJobSaved(widget.jobId);
+      final applied = await appsService.isApplied(widget.jobId);
+      if (mounted) {
+        setState(() {
+          _isSaved = saved;
+          _isApplied = applied;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _handleToggleSave() async {
+    if (_isTogglingBookmark) return;
+    setState(() => _isTogglingBookmark = true);
+    try {
+      final service = ref.read(savedJobsServiceProvider);
+      if (_isSaved) {
+        await service.unsaveJob(widget.jobId);
+        if (mounted) {
+          setState(() => _isSaved = false);
+          ref.invalidate(savedJobsProvider);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Removed from saved jobs')),
+          );
+        }
+      } else {
+        await service.saveJob(widget.jobId);
+        if (mounted) {
+          setState(() => _isSaved = true);
+          ref.invalidate(savedJobsProvider);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Job saved!')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isTogglingBookmark = false);
+    }
+  }
+
+  Future<void> _handleApply(Job job) async {
+    if (_isApplied) return;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _ApplyBottomSheet(
+        job: job,
+        colorScheme: colorScheme,
+        onApplied: () {
+          if (mounted) {
+            setState(() => _isApplied = true);
+            ref.invalidate(appliedJobsProvider);
+          }
+        },
+      ),
+    );
+  }
 
   Future<void> _handleAiMatch(Job job) async {
     if (_isCheckingMatch) return;
@@ -520,13 +603,20 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
       child: Row(
         children: [
           // Bookmark Button
-          Container(
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
             height: 54,
             width: 54,
             decoration: BoxDecoration(
-              color: colorScheme.surface,
+              color: _isSaved
+                  ? colorScheme.primary.withOpacity(0.12)
+                  : colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+              border: Border.all(
+                color: _isSaved
+                    ? colorScheme.primary.withOpacity(0.4)
+                    : colorScheme.outline.withOpacity(0.2),
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.02),
@@ -536,15 +626,24 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
               ],
             ),
             child: IconButton(
-              icon: Icon(
-                Icons.bookmark_add_outlined,
-                color: colorScheme.onSurface,
-              ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Saved to bookmarks')),
-                );
-              },
+              icon: _isTogglingBookmark
+                  ? SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colorScheme.primary,
+                      ),
+                    )
+                  : Icon(
+                      _isSaved
+                          ? Icons.bookmark_rounded
+                          : Icons.bookmark_add_outlined,
+                      color: _isSaved
+                          ? colorScheme.primary
+                          : colorScheme.onSurface,
+                    ),
+              onPressed: _handleToggleSave,
             ),
           ),
           const SizedBox(width: 12),
@@ -595,25 +694,318 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
             child: SizedBox(
               height: 54,
               child: ElevatedButton(
-                onPressed: () {
-                  final contact = job.telegramContact ?? 'employer_handle';
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Opening Telegram: $contact')),
-                  );
-                },
+                onPressed: _isApplied ? null : () => _handleApply(job),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
+                  backgroundColor: _isApplied
+                      ? colorScheme.primary.withOpacity(0.5)
+                      : colorScheme.primary,
                   foregroundColor: colorScheme.onPrimary,
+                  disabledBackgroundColor: colorScheme.primary.withOpacity(0.5),
+                  disabledForegroundColor: colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Apply Now',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                child: Text(
+                  _isApplied ? 'Applied ✓' : 'Apply Now',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ApplyBottomSheet extends ConsumerStatefulWidget {
+  final Job job;
+  final ColorScheme colorScheme;
+  final VoidCallback onApplied;
+
+  const _ApplyBottomSheet({
+    required this.job,
+    required this.colorScheme,
+    required this.onApplied,
+  });
+
+  @override
+  ConsumerState<_ApplyBottomSheet> createState() => _ApplyBottomSheetState();
+}
+
+class _ApplyBottomSheetState extends ConsumerState<_ApplyBottomSheet> {
+  bool _isGenerating = false;
+  bool _isApplying = false;
+  String? _generatedMessage;
+  final _messageController = TextEditingController();
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _generateMessage() async {
+    setState(() => _isGenerating = true);
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) throw Exception('Not logged in');
+
+      final profileService = ref.read(profileServiceProvider);
+      final profile = await profileService.getJobseekerProfile(user.id);
+      final name =
+          user.userMetadata?['full_name'] as String? ?? 'Applicant';
+      final university = profile?['university'] as String? ?? '';
+      final skills = (profile?['skills'] as List<dynamic>? ?? []).join(', ');
+      final cvUrl = profile?['cv_url'] as String? ?? '';
+
+      final groq = ref.read(groqServiceProvider);
+      final msg = await groq.generateApplicationMessage(
+        jobseekerName: name,
+        university: university,
+        skills: skills,
+        jobTitle: widget.job.title,
+        companyName: widget.job.companyName ?? '',
+        cvUrl: cvUrl,
+      );
+
+      if (mounted) {
+        setState(() {
+          _generatedMessage = msg;
+          _messageController.text = msg;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to generate message: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
+    }
+  }
+
+  Future<void> _submitApplication() async {
+    setState(() => _isApplying = true);
+    try {
+      final appsService = ref.read(applicationsServiceProvider);
+      await appsService.applyToJob(
+        jobId: widget.job.id,
+        message: _messageController.text.trim().isNotEmpty
+            ? _messageController.text.trim()
+            : null,
+      );
+      widget.onApplied();
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Application submitted successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to apply: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isApplying = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = widget.colorScheme;
+    final contact = widget.job.telegramContact ?? '';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        24,
+        24,
+        MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: cs.onSurface.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Apply for ${widget.job.title}',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: cs.onSurface,
+            ),
+          ),
+          if (widget.job.companyName != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              widget.job.companyName!,
+              style: TextStyle(
+                fontSize: 14,
+                color: cs.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Application Message (optional)',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _isGenerating ? null : _generateMessage,
+                icon: _isGenerating
+                    ? SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: cs.primary,
+                        ),
+                      )
+                    : Icon(Icons.auto_awesome, size: 16, color: cs.primary),
+                label: Text(
+                  _isGenerating ? 'Generating...' : 'AI Generate',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: cs.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: TextButton.styleFrom(padding: EdgeInsets.zero),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: cs.onSurface.withOpacity(0.04),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: cs.outline.withOpacity(0.2)),
+            ),
+            child: TextField(
+              controller: _messageController,
+              maxLines: 4,
+              style: TextStyle(fontSize: 14, color: cs.onSurface),
+              decoration: InputDecoration(
+                hintText: 'Write a short message to the employer...',
+                hintStyle:
+                    TextStyle(color: cs.onSurface.withOpacity(0.4), fontSize: 14),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.all(14),
+              ),
+            ),
+          ),
+          if (_generatedMessage != null) ...[
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () {
+                Clipboard.setData(
+                    ClipboardData(text: _messageController.text));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Message copied!')),
+                );
+              },
+              child: Row(
+                children: [
+                  Icon(Icons.copy, size: 14, color: cs.primary),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Copy message',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: cs.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 20),
+          if (contact.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.send_rounded,
+                    size: 14,
+                    color: cs.onSurface.withOpacity(0.4),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Will send application via Telegram: @$contact',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: cs.onSurface.withOpacity(0.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: _isApplying ? null : _submitApplication,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 0,
+              ),
+              child: _isApplying
+                  ? SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: cs.onPrimary,
+                      ),
+                    )
+                  : const Text(
+                      'Confirm Application',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
             ),
           ),
         ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../features/onboarding/screens/onboarding_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/register_screen.dart';
 import '../features/auth/screens/role_selection_screen.dart';
@@ -23,10 +24,19 @@ import '../features/profile/screens/employer_edit_profile_screen.dart';
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
   final profileState = ref.watch(profileStateProvider);
+  final onboardingSeen = ref.watch(onboardingSeenProvider);
 
   return GoRouter(
     initialLocation: '/login',
     redirect: (BuildContext context, GoRouterState state) {
+      if (onboardingSeen == null) return null;
+
+      final isOnboardingRoute = state.matchedLocation == '/onboarding';
+
+      if (onboardingSeen == false && !isOnboardingRoute) {
+        return '/onboarding';
+      }
+
       final session = authState.value?.session;
       final isAuthenticated = session != null;
 
@@ -35,7 +45,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isRoleSelectionRoute = state.matchedLocation == '/role-selection';
       final isAuthRoute = isLoginRoute || isRegisterRoute;
 
-      if (!isAuthenticated && !isAuthRoute) {
+      if (!isAuthenticated && !isAuthRoute && !isOnboardingRoute) {
         return '/login';
       }
 
@@ -64,6 +74,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/register',

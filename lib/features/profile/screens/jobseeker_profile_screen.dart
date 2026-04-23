@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/profile_service.dart';
+import '../../../core/theme_provider.dart';
 
 class JobseekerProfileScreen extends ConsumerStatefulWidget {
   const JobseekerProfileScreen({super.key});
@@ -107,10 +108,25 @@ class _JobseekerProfileScreenState
         elevation: 0,
         // Removed "Profile" title text
         actions: [
+          Consumer(
+            builder: (context, ref, _) {
+              final isDark =
+                  ref.watch(themeModeProvider) == ThemeMode.dark;
+              return IconButton(
+                onPressed: () =>
+                    ref.read(themeModeProvider.notifier).toggle(),
+                icon: Icon(
+                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                  color: colorScheme.onSurface,
+                ),
+                tooltip: isDark ? 'Light Mode' : 'Dark Mode',
+              );
+            },
+          ),
           // Modern Logout Button moved to Top Right
           IconButton(
             onPressed: _handleLogout,
-            icon: const Icon(Icons.logout_rounded, color: Colors.black87),
+            icon: Icon(Icons.logout_rounded, color: colorScheme.onSurface),
             tooltip: 'Logout',
           ),
           const SizedBox(width: 8),
