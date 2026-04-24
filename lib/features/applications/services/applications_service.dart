@@ -30,12 +30,12 @@ class ApplicationsService {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('User not logged in');
 
-    await _supabase.from('job_applications').upsert({
+    await _supabase.from('job_applications').insert({
       'job_id': jobId,
       'jobseeker_id': user.id,
       'status': 'applied',
       'message': message,
-    }, onConflict: 'job_id, jobseeker_id');
+    });
   }
 
   Future<bool> isApplied(String jobId) async {
