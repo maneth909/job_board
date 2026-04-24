@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../models/job_model.dart';
 import '../services/job_service.dart';
+import '../../applications/services/applications_service.dart';
 
 class ManageJobsScreen extends ConsumerWidget {
   const ManageJobsScreen({super.key});
@@ -137,6 +138,37 @@ class ManageJobsScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
+
+                // View Applicants Action
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 4,
+                  ),
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.people_rounded,
+                      color: Colors.green,
+                      size: 20,
+                    ),
+                  ),
+                  title: const Text(
+                    'View Applicants',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.green,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(bottomSheetContext);
+                    context.push('/jobs/${job.id}/applicants', extra: job.title);
+                  },
+                ),
 
                 // Edit Action
                 ListTile(
@@ -451,6 +483,44 @@ class ManageJobsScreen extends ConsumerWidget {
                       ),
                     ],
                   ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Applicants count button
+                Consumer(
+                  builder: (context, ref, _) {
+                    final applicantsAsync = ref.watch(jobApplicantsProvider(job.id));
+                    final count = applicantsAsync.valueOrNull?.length ?? 0;
+                    return GestureDetector(
+                      onTap: () => context.push('/jobs/${job.id}/applicants', extra: job.title),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.green.withOpacity(0.2)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.people_rounded, size: 14, color: Colors.green),
+                            const SizedBox(width: 6),
+                            Text(
+                              '$count Applicant${count == 1 ? '' : 's'}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.green,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.chevron_right_rounded, size: 14, color: Colors.green),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

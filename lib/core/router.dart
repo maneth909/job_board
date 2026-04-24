@@ -20,6 +20,7 @@ import '../features/jobs/models/job_model.dart';
 import '../shared/screens/main_layout_screen.dart';
 import '../features/profile/screens/jobseeker_edit_profile_screen.dart';
 import '../features/profile/screens/employer_edit_profile_screen.dart';
+import '../features/applications/screens/job_applicants_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -114,6 +115,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final matchResult = state.extra as Map<String, dynamic>;
           return AiMatchScreen(matchResult: matchResult);
+        },
+      ),
+      GoRoute(
+        path: '/jobs/:id/applicants',
+        builder: (context, state) {
+          final jobId = state.pathParameters['id']!;
+          final jobTitle = state.extra as String? ?? 'Job';
+          return JobApplicantsScreen(jobId: jobId, jobTitle: jobTitle);
         },
       ),
       GoRoute(
