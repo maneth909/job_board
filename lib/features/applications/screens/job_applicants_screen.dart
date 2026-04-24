@@ -354,8 +354,14 @@ class _ApplicantCard extends StatelessWidget {
               GestureDetector(
                 onTap: () async {
                   final uri = Uri.parse(cvUrl);
-                  if (await canLaunchUrl(uri)) {
+                  try {
                     await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  } catch (_) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Could not open CV. No PDF viewer found.')),
+                      );
+                    }
                   }
                 },
                 child: Container(
