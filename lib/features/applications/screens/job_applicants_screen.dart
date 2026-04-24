@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/applications_service.dart';
 
 class JobApplicantsScreen extends ConsumerWidget {
@@ -175,6 +176,8 @@ class _ApplicantCard extends StatelessWidget {
     final university = profile?['university'] as String?;
     final major = profile?['major'] as String?;
     final bio = profile?['bio'] as String?;
+    final cvUrl = applicant['cv_url'] as String?;
+    final cvFilename = profile?['cv_filename'] as String?;
     final rawSkills = profile?['skills'];
     final List<String> skills = rawSkills is List
         ? rawSkills.map((s) => s.toString()).toList()
@@ -339,6 +342,72 @@ class _ApplicantCard extends StatelessWidget {
                         fontSize: 13,
                         color: colorScheme.onSurface.withOpacity(0.7),
                         height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            if (cvUrl != null) ...[
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () async {
+                  final uri = Uri.parse(cvUrl);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: colorScheme.primary.withOpacity(0.25)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.picture_as_pdf_rounded, size: 18, color: colorScheme.primary),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          cvFilename ?? 'View CV',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.primary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Icon(Icons.open_in_new_rounded, size: 16, color: colorScheme.primary),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
+            if (cvUrl == null) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withOpacity(0.04),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.picture_as_pdf_rounded, size: 18, color: colorScheme.onSurface.withOpacity(0.3)),
+                    const SizedBox(width: 10),
+                    Text(
+                      'No CV uploaded',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colorScheme.onSurface.withOpacity(0.4),
                       ),
                     ),
                   ],

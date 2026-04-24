@@ -30,11 +30,20 @@ class ApplicationsService {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('User not logged in');
 
+    final profileData = await _supabase
+        .from('jobseeker_profiles')
+        .select('cv_url')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    final cvUrl = profileData?['cv_url'] as String?;
+
     await _supabase.from('job_applications').insert({
       'job_id': jobId,
       'jobseeker_id': user.id,
       'status': 'applied',
       'message': message,
+      'cv_url': cvUrl,
     });
   }
 
@@ -73,7 +82,7 @@ class ApplicationsService {
 
     final appsResponse = await _supabase
         .from('job_applications')
-        .select('id, status, message, applied_at, jobseeker_id')
+        .select('id, status, message, applied_at, jobseeker_id, cv_url')
         .eq('job_id', jobId)
         .order('applied_at', ascending: false);
 
@@ -84,7 +93,7 @@ class ApplicationsService {
 
     final profilesResponse = await _supabase
         .from('jobseeker_profiles')
-        .select('id, university, major, skills, bio, cv_url, cv_filename')
+        .select('id, university, major, skills, bio, cv_filename')
         .inFilter('id', seekerIds);
 
     final avatarResponse = await _supabase
