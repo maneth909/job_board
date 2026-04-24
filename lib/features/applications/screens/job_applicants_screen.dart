@@ -176,7 +176,7 @@ class _ApplicantCard extends StatelessWidget {
     final university = profile?['university'] as String?;
     final major = profile?['major'] as String?;
     final bio = profile?['bio'] as String?;
-    final cvUrl = applicant['cv_url'] as String?;
+    final cvUrl = profile?['cv_url'] as String?;
     final cvFilename = profile?['cv_filename'] as String?;
     final rawSkills = profile?['skills'];
     final List<String> skills = rawSkills is List
